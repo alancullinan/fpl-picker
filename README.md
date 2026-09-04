@@ -33,6 +33,10 @@ python3 pipeline/backtest.py --all --set att_fdr=0.2
 python3 pipeline/backtest.py --all --out data/backtest.json
 ```
 
+`pipeline/sweep.py` runs every model parameter over a grid and prints the three-season change
+against the current default, so a coefficient set by judgement can be checked rather than
+trusted.
+
 `--oracle minutes` feeds in actual minutes as a diagnostic: it shows that most remaining error
 is minutes prediction (best XI 58.2 with predicted minutes, 64.3 with real ones), which is
 where model work pays.

@@ -23,6 +23,8 @@ Pages from the `main` branch root.
   deadline", with every tunable in `PARAMS`. Shared by build and backtest.
 - `pipeline/build.py`: raw into `data/fpl.json`, the single bundle the site reads, plus a
   prediction snapshot in `data/history/gwNN.json`. Standard library only.
+- `pipeline/sweep.py`: runs every model parameter over a grid through the backtest and prints
+  three-season deltas against the current default. Run it before claiming a coefficient is right.
 - `pipeline/backtest.py`: replays past seasons from the Vaastav mirror and scores the model
   against baselines; `--all` scores three seasons and reports the mean, `--set key=value` tries
   parameter changes. Writes `data/backtest.json`.
