@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#0f172a">
+  <title>FPL Picker</title>
+  <link rel="stylesheet" href="styles.css?v=1">
+</head>
+<body>
+  <header class="top">
+    <div class="brand">
+      <h1>FPL Picker</h1>
+      <span id="season" class="muted"></span>
+    </div>
+    <div id="deadline" class="deadline">
+      <span id="gw-label">Loading…</span>
+      <span id="countdown" class="countdown"></span>
+    </div>
+  </header>
+
+  <nav class="tabs" role="tablist">
+    <button class="tab active" data-view="team" role="tab">My Team</button>
+    <button class="tab" data-view="players" role="tab">Players</button>
+    <button class="tab" data-view="fixtures" role="tab">Fixtures</button>
+  </nav>
+
+  <main>
+    <section id="status" class="status hidden"></section>
+
+    <!-- My Team -->
+    <section id="view-team" class="view">
+      <div id="team-empty" class="card hidden">
+        <p>No squad data yet. The data workflow has not run for this entry, or the entry is private.</p>
+      </div>
+      <div id="team-content" class="hidden">
+        <div class="summary" id="team-summary"></div>
+        <div class="card">
+          <div class="card-head">
+            <h2 id="team-name"></h2>
+            <span id="team-gw" class="muted"></span>
+          </div>
+          <div id="pitch" class="pitch"></div>
+          <div id="bench" class="bench"></div>
+        </div>
+        <div class="card">
+          <div class="card-head"><h2>Chips</h2><span class="muted">two sets, one per half</span></div>
+          <div id="chips" class="chips"></div>
+        </div>
+        <div class="card">
+          <div class="card-head"><h2>Best XI by xP</h2><span class="muted" id="bestxi-note"></span></div>
+          <div id="bestxi"></div>
+        </div>
+        <div class="card">
+          <div class="card-head"><h2>Transfer ideas</h2><span class="muted">one-for-one, within budget, next 5 GWs</span></div>
+          <div id="transfers"></div>
+        </div>
+        <div class="card">
+          <div class="card-head"><h2>Season</h2><span class="muted" id="season-note"></span></div>
+          <div id="history" class="tablewrap"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Players -->
+    <section id="view-players" class="view hidden">
+      <div class="filters">
+        <input id="f-search" type="search" placeholder="Search player" autocomplete="off">
+        <div class="seg" id="f-pos">
+          <button data-pos="0" class="active">All</button>
+          <button data-pos="1">GKP</button>
+          <button data-pos="2">DEF</button>
+          <button data-pos="3">MID</button>
+          <button data-pos="4">FWD</button>
+        </div>
+        <div class="filter-row">
+          <select id="f-team"><option value="0">All teams</option></select>
+          <label>Max £<input id="f-price" type="number" step="0.1" min="3.5" max="16" placeholder="any"></label>
+          <label class="check"><input id="f-avail" type="checkbox" checked> Fit only</label>
+          <label class="check"><input id="f-mine" type="checkbox"> Not in my squad</label>
+        </div>
+      </div>
+      <div class="tablewrap">
+        <table id="players-table" class="data">
+          <thead></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <p class="muted small" id="players-count"></p>
+    </section>
+
+    <!-- Fixtures -->
+    <section id="view-fixtures" class="view hidden">
+      <div class="filters">
+        <div class="seg" id="f-horizon">
+          <button data-n="3">3 GWs</button>
+          <button data-n="5" class="active">5 GWs</button>
+          <button data-n="8">8 GWs</button>
+        </div>
+        <span class="muted small">Sorted easiest first over the chosen window.</span>
+      </div>
+      <div class="tablewrap">
+        <table id="fixtures-table" class="data ticker">
+          <thead></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <footer class="foot">
+    <span id="generated" class="muted small"></span>
+    <span class="muted small">xP is a simple model: minutes × (xG, xA, clean sheets, DefCon, saves, bonus) adjusted for fixture difficulty. Details in the repo.</span>
+  </footer>
+
+  <div id="modal" class="modal hidden">
+    <div class="modal-body">
+      <button class="modal-close" id="modal-close">Close</button>
+      <div id="modal-content"></div>
+    </div>
+  </div>
+
+  <script src="app.js?v=1"></script>
+</body>
+</html>
