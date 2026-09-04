@@ -222,10 +222,18 @@
     $('#team-name').textContent = me.team_name || 'My team';
     $('#team-gw').textContent = P ? `Planning GW${D.next_gw} from the confirmed GW${me.picks_gw} squad` : `Confirmed squad from GW${me.picks_gw}${me.active_chip ? ' · ' + (CHIP_NAME[me.active_chip] || me.active_chip) + ' active' : ''}`;
 
-    const ft = me.free_transfers ?? '?';
+    const ft = me.free_transfers;
+    let ftTile = ft ?? '?';
+    if (P) {
+      // Show what the plan leaves, not what FPL granted.
+      const used = P.swaps.length, h = hit();
+      if (P.chip === 'wildcard' || P.chip === 'freehit') ftTile = `${used}<span class="sub2">used · free on ${CHIP_LABEL[P.chip]}</span>`;
+      else if (ft == null) ftTile = `?<span class="sub2">${used} used</span>`;
+      else ftTile = `<span class="${used > ft ? 'bad' : ''}">${Math.max(0, ft - used)}</span><span class="sub2">of ${ft} left · ${used} used${h ? ` · <span class="bad">-${h} pts</span>` : ''}</span>`;
+    }
     const stats = [
       ['GW points', me.gw_points ?? '-'], ['Total', commas(me.overall_points)], ['Rank', commas(me.overall_rank)],
-      ['Value', money(me.value)], ['Bank', money(bank())], ['Free transfers', ft],
+      ['Value', money(me.value)], [P ? 'Bank after plan' : 'Bank', `<span class="${bank() < 0 ? 'bad' : ''}">${money(bank())}</span>`], ['Free transfers', ftTile],
     ];
     $('#team-summary').innerHTML = stats.map(([k, v]) => `<div class="stat"><div class="k">${k}</div><div class="v">${v}</div></div>`).join('');
 

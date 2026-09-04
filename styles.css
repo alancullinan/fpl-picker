@@ -124,3 +124,4 @@ table.outlook td { text-align: center; padding: 5px 4px; }
 table.outlook td:first-child { text-align: left; }
 table.outlook .benchrow td { opacity: .7; }
 table.data td .sub.x { color: var(--accent); font-weight: 600; }
+.stat .sub2 { display: block; font-size: 11px; color: var(--muted); font-weight: 400; line-height: 1.2; }
