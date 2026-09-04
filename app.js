@@ -255,6 +255,22 @@
     return `owned by <b>${num(p.town)}%</b> of the top ${commas(D.top.ranks[1])}${cap}${lean}<br>`
       + `<span class="muted">effective ownership ${num(p.teo)}% · sample of ${D.top.sampled} from GW${D.top.gw}</span>`;
   }
+  // How much playing time the projection rests on. Low-evidence players can
+  // top the table on a couple of hundred minutes, which the number alone hides.
+  function confMark(p) {
+    if (p.conf === 'low') return '<span class="conf low" title="Thin evidence: see the player sheet">◔</span>';
+    if (p.conf === 'med') return '<span class="conf med" title="Moderate evidence">◑</span>';
+    return '';
+  }
+  function confText(p) {
+    if (p.ev == null) return '';
+    const season = Math.round(p.ev / 90);
+    const label = p.conf === 'low' ? 'thin' : p.conf === 'med' ? 'moderate' : 'solid';
+    const note = p.conf === 'low'
+      ? ' — the projection leans on the prior rather than on what he has done, so treat it as an extrapolation.'
+      : p.conf === 'med' ? ' — enough to be indicative, not settled.' : '.';
+    return `<b>${label}</b>: about ${season} full matches of evidence (${p.min} min this season plus last season's)${note}`;
+  }
   function flag(p) {
     if (p.status === 'a') return '';
     return `<span class="${p.status === 'd' ? 'warn' : 'bad'}" title="${esc(p.news)}">${esc(STATUS[p.status] || p.status)}${p.chance != null ? ' ' + p.chance + '%' : ''}</span>`;
@@ -546,7 +562,7 @@
     for (const p of rows.slice(0, limit)) {
       const tr = el('tr', 'clickable' + (mine.has(p.id) ? ' mine' : ''));
       tr.innerHTML = COLS.map((c) => {
-        if (c.k === 'name') return `<td class="name">${luDot(p)}${esc(p.name)} ${flag(p)}<span class="sub">${esc(teamOf(p).short)} · ${POS[p.pos]} ${spTag(p)}</span></td>`;
+        if (c.k === 'name') return `<td class="name">${luDot(p)}${esc(p.name)} ${confMark(p)}${flag(p)}<span class="sub">${esc(teamOf(p).short)} · ${POS[p.pos]} ${spTag(p)}</span></td>`;
         if (c.gw != null) { const g = teamOf(p).fixtures[c.gw] || []; return `<td>${g.length ? g.map(fxChip).join('') : fxChip(null)}<span class="sub x">${num(p.xp_gw[c.gw])}</span></td>`; }
         return `<td class="${c.x ? 'x' : ''}">${c.f ? c.f(colVal(c, p)) : num(colVal(c, p))}</td>`;
       }).join('');
@@ -625,6 +641,7 @@
         <span class="k">Next GW xP</span><span><b>${num(p.xp1)}</b> (FPL's own ep ${num(p.ep_next)})</span>
         <span class="k">Next 5 xP</span><span><b>${num(p.xp5)}</b></span>
         <span class="k">If he plays 90</span><span>${num((p.xp_full || p.xp_gw)[0])} next GW · ${num(xpFullN(p, 5))} next 5</span>
+        <span class="k">Evidence</span><span>${confMark(p)} ${confText(p)}</span>
         <span class="k">Set pieces</span><span>${spTag(p)} ${spText(p)} <span class="muted">(not in the xP model)</span></span>
         <span class="k">Lineup</span><span>${luDot(p)} ${luText(p) || '<span class="muted">no lineup data</span>'}</span>
         <span class="k">Minutes</span><span>${Math.round(p.p_play * 100)}% to play, ${Math.round((p.p_60 ?? p.p_play) * 100)}% for 60+, ${p.xmin != null ? p.xmin + ' expected' : ''}${p.chance != null ? ' · FPL flag ' + p.chance + '%' : ''}${p.recent && p.recent.length ? '<br><span class="muted">last ' + p.recent.length + ': ' + p.recent.join(', ') + ' min</span>' : ''}</span>

@@ -22,6 +22,11 @@ PRIOR_SAVES = {1: 2.7, 2: 0.0, 3: 0.0, 4: 0.0}
 PARAMS = {
     "prior_minutes": 900,     # this season's per-90 rates are shrunk towards a prior worth ten games
     "prev_min_minutes": 450,  # last season counts as a prior only above this
+    "prev_conf": 0.0,         # scale the prior's weight by how many minutes it rests on:
+                              # weight x pmin/(pmin + prev_conf). Tested at 300-1500 and left
+                              # OFF: no variant moved the three-season mean beyond noise.
+                              # Thin-sample players are not systematically wrong, only
+                              # uncertain, so the site marks confidence instead (see "ev").
     "league_xgc": 1.35,       # goals conceded per game, league average
     "prior_games": 5,         # weight of that prior vs a team's observed xGC
     # Opponent strength. FDR is FPL's five-level rating, set before the season.
@@ -115,12 +120,13 @@ def make_prior(pos, price, median_price, prev, P=PARAMS, pen_order=None, sp_orde
             "saves": (float(prev.get("saves") or 0) + PRIOR_SAVES[pos] * k) / (g + k),
             "bonus": (float(prev.get("bonus") or 0) + min(1.0, 0.15 * scale ** 2) * k) / (g + k), "src": "prev",
             "start": min(1.0, float(prev.get("starts") or 0) / 38.0),
+            "minutes": pmin,
         }
     return {
         "xg": PRIOR_XG[pos] * scale ** 1.5 + _pen_uplift(pen_order, P),
         "xa": PRIOR_XA[pos] * scale ** 1.2 + (P["sp_xa"] if _order(sp_order) == 1 else 0.0),
         "dc": PRIOR_DC[pos], "saves": PRIOR_SAVES[pos], "bonus": min(1.0, 0.15 * scale ** 2), "src": "price",
-        "start": P["unseen_start"],
+        "start": P["unseen_start"], "minutes": None,
     }
 
 
@@ -129,17 +135,25 @@ def _pen_uplift(pen_order, P):
     return P["pen_xg"] if o == 1 else P["pen_xg_second"] if o == 2 else 0.0
 
 
-def shrink(obs_total, obs_minutes, prior_rate, P=PARAMS):
+def shrink(obs_total, obs_minutes, prior_rate, P=PARAMS, prior_minutes=None):
+    """Blend an observed total with a prior rate.
+
+    prior_minutes is how many minutes the prior itself rests on; when
+    prev_conf is set, a prior from a short season carries less weight.
+    """
     pm = P["prior_minutes"]
+    if P["prev_conf"] > 0 and prior_minutes is not None:
+        pm *= prior_minutes / (prior_minutes + P["prev_conf"])
     return (obs_total + prior_rate * pm / 90.0) / ((obs_minutes + pm) / 90.0)
 
 
 def rates(state, prior, P=PARAMS):
     m = state["mins"]
+    pm = prior.get("minutes")
     return {
-        "xg90": shrink(state["xg"], m, prior["xg"], P), "xa90": shrink(state["xa"], m, prior["xa"], P),
-        "dc90": shrink(state["dc"], m, prior["dc"], P), "sv90": shrink(state["saves"], m, prior["saves"], P),
-        "bon": shrink(state["bonus"], m, prior["bonus"], P), "src": prior["src"],
+        "xg90": shrink(state["xg"], m, prior["xg"], P, pm), "xa90": shrink(state["xa"], m, prior["xa"], P, pm),
+        "dc90": shrink(state["dc"], m, prior["dc"], P, pm), "sv90": shrink(state["saves"], m, prior["saves"], P, pm),
+        "bon": shrink(state["bonus"], m, prior["bonus"], P, pm), "src": prior["src"],
     }
 
 

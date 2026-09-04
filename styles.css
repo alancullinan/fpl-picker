@@ -371,3 +371,5 @@ details.details[open] summary::before { content: "▾ "; }
 @media (prefers-reduced-motion: reduce) {
   * { animation-duration: .01ms !important; transition-duration: .01ms !important; }
 }
+.conf { font-size: 12px; margin-right: 2px; vertical-align: middle; }
+.conf.low { color: var(--warn); } .conf.med { color: var(--ink-faint); }

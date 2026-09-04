@@ -159,6 +159,11 @@ def build(raw, out):
         fixtures_by_gw = [fx_list.get(gw, []) for gw in range(next_id, next_id + HORIZON)] if next_id else []
         gw_xp, parts1, r, p_play = model.player_xp(state, prior, fixtures_by_gw, team_xgc[p["team"]], P)
         _, p_60, exp_frac = model.minutes_probs(dict(state, prior_start=prior.get("start", P["unseen_start"])), P)
+        # How much evidence the projection rests on: minutes this season plus the
+        # minutes behind the prior. Below roughly a full season's worth, the
+        # numbers are an extrapolation and the site says so.
+        prior_min = fnum((pr or {}).get("minutes")) if pr else 0.0
+        evidence = int(mins + prior_min)
         gw_full, _, _, _ = model.player_xp(state, prior, fixtures_by_gw, team_xgc[p["team"]], P, full=True)
         gw_full = [round(v, 2) for v in gw_full]
         gw_xp = [round(v, 2) for v in gw_xp]
@@ -201,6 +206,8 @@ def build(raw, out):
             "xgc90": fnum(p.get("expected_goals_conceded_per_90")),
             "dc90": fnum(p.get("defensive_contribution_per_90")),
             "saves90": fnum(p.get("saves_per_90")),
+            "ev": evidence,
+            "conf": "low" if evidence < 1200 else ("med" if evidence < 2600 else "high"),
             "rates": {"xg90": round(xg90, 2), "xa90": round(xa90, 2), "dc90": round(dc90, 1),
                       "sv90": round(saves90, 1), "bon": round(bonus_pg, 2), "src": prior_src},
             "ict": fnum(p.get("ict_index")),
