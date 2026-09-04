@@ -15,7 +15,8 @@ Pages from the `main` branch root.
 - `pipeline/build.py`: raw into `data/fpl.json`, the single bundle the site reads. Contains the
   expected-points model. Standard library only.
 - `index.html`, `app.js`, `styles.css`: the site. Three views: My Team, Players, Fixtures.
-- `.github/workflows/update-data.yml`: runs fetch and build on a schedule and commits the bundle.
+- `.github/workflows/update-data.yml`: runs fetch and build on request (workflow_dispatch, or
+  a push touching the pipeline) and commits the bundle. There is no schedule by design.
 - `.claude/skills/fpl/SKILL.md`: the FPL rules (squad, transfers, chips, scoring) and the weekly
   workflow. Read it before touching the model or giving any team advice.
 
@@ -30,6 +31,11 @@ Pages from the `main` branch root.
 - Bump the `?v=` query on `app.js` and `styles.css` in `index.html` when changing them; GitHub
   Pages caches aggressively.
 - Team advice must respect the rules in the skill: squad shape, 3 per club, budget, hits, chips.
+- Planning mode state lives only in the browser (`localStorage` key `fplplan`) and is derived
+  from `me.picks`; it is dropped when `me.picks_gw` moves on. The public API never shows
+  pre-deadline changes, so do not try to "fix" that in the pipeline.
+- The "Refresh data" button dispatches the workflow through the GitHub API with a token the
+  user pastes once (`localStorage` key `fplpicker.gh`). Never commit a token anywhere.
 
 ## Local run
 

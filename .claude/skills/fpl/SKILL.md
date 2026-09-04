@@ -104,10 +104,19 @@ Doubles add, blanks give 0. Minutes probability blends FPL's injury flag with st
 Known weaknesses: no penalty-taker bonus, no rotation awareness beyond start rate, bonus is
 crude, and FPL's FDR is a blunt instrument. Improve these before adding anything else.
 
+## What the API can and cannot show
+
+Picks and transfers for a gameweek appear in the public API only after that gameweek's
+deadline. Before the deadline `me.picks` is the previous confirmed squad and `me.transfers`
+omits pending moves. The site's planning mode holds pre-deadline intentions in the browser;
+it is not in the bundle, so ask the user what they have planned rather than assuming the
+confirmed squad is current.
+
 ## Weekly workflow
 
-1. Confirm the data is fresh (`generated` in the bundle, or the footer of the site). If it is
-   older than the last press conferences, run the "Update FPL data" workflow first.
+1. Confirm the data is fresh (`generated` in the bundle, or the footer of the site). The
+   workflow runs on request only: run "Update FPL data" from the Actions tab or the site's
+   Refresh button after the press conferences, typically Friday morning.
 2. Read `me`: bank, FTs, chips left in the current half, current XI and captain.
 3. Injuries and doubts in the 15: anyone with `status` not `a` or `chance` below 75 is a
    candidate to move. Quote the `news` text.

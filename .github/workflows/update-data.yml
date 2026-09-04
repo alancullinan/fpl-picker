@@ -1,10 +1,8 @@
 name: Update FPL data
 
+# Runs on request only: from the Actions tab, from the site's "Refresh data"
+# button (workflow_dispatch through the API), or when the pipeline itself changes.
 on:
-  schedule:
-    # Every 6 hours, plus hourly on Friday and Saturday around typical deadlines (UTC).
-    - cron: "0 */6 * * *"
-    - cron: "0 8-19 * * 5,6"
   workflow_dispatch:
   push:
     branches: [main]

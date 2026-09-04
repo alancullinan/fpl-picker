@@ -104,3 +104,19 @@ tr.clickable { cursor: pointer; }
   .filters { flex-direction: row; flex-wrap: wrap; align-items: center; }
   .filters input[type=search] { width: 220px; }
 }
+
+.btn { background: var(--panel2); color: var(--text); border: 1px solid var(--line); border-radius: 8px; padding: 7px 12px; font-weight: 600; text-decoration: none; display: inline-block; }
+.btn.primary { background: var(--accent); color: #0f172a; border-color: var(--accent); }
+.btn.small { padding: 4px 8px; font-size: 12px; }
+.btn:disabled { opacity: .6; }
+.planbar { display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; }
+.planrow { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; font-size: 13px; }
+.planrow select { background: var(--panel2); color: var(--text); border: 1px solid var(--line); border-radius: 8px; padding: 5px 8px; }
+.pcard.planned { border-color: var(--accent); }
+.pcard.selected { outline: 2px solid var(--warn); }
+.chip.planned { outline: 2px solid var(--accent); opacity: 1; }
+.actions { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; }
+.item.clickable { cursor: pointer; }
+.item.disabled { opacity: .5; }
+.modal-body input[type=search], .modal-body input[type=password] { background: var(--panel2); color: var(--text); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; }
+.footrow { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
