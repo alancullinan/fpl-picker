@@ -4,6 +4,9 @@ name: Debug lineups page
 # be developed against real markup. Delete once the parser is stable.
 on:
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ["pipeline/lineups.py", ".github/workflows/debug-lineups.yml"]
 
 permissions:
   contents: write
