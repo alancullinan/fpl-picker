@@ -31,8 +31,8 @@ Pages from the `main` branch root.
 - Bump the `?v=` query on `app.js` and `styles.css` in `index.html` when changing them; GitHub
   Pages caches aggressively.
 - Team advice must respect the rules in the skill: squad shape, 3 per club, budget, hits, chips.
-- Planning mode state lives only in the browser (`localStorage` key `fplplan`) and is derived
-  from `me.picks`; it is dropped when `me.picks_gw` moves on. The public API never shows
+- The plan (`localStorage` key `fplplan`) always exists once data loads: it starts as a copy of
+  `me.picks` and the UI shows the diff against it. It is dropped when `me.picks_gw` moves on. The public API never shows
   pre-deadline changes, so do not try to "fix" that in the pipeline.
 - The "Refresh data" button dispatches the workflow through the GitHub API with a token the
   user pastes once (`localStorage` key `fplpicker.gh`). Never commit a token anywhere.

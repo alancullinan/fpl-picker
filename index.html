@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="theme-color" content="#0f172a">
   <title>FPL Picker</title>
-  <link rel="stylesheet" href="styles.css?v=5">
+  <link rel="stylesheet" href="styles.css?v=6">
 </head>
 <body>
   <header class="top">
@@ -34,17 +34,23 @@
         <p>No squad data yet. The data workflow has not run for this entry, or the entry is private.</p>
       </div>
       <div id="team-content" class="hidden">
-        <div class="summary" id="team-summary"></div>
+        <p id="lastgw" class="muted small lastgw"></p>
         <div class="card">
           <div class="card-head">
-            <h2 id="team-name"></h2>
-            <div id="team-toggle"></div>
+            <h2 id="gw-title"></h2>
+            <div class="actions" style="margin:0"><button class="btn small" id="gw-auto">Auto-pick XI</button><button class="btn small hidden" id="gw-reset">Reset</button></div>
           </div>
-          <p id="team-gw" class="muted small" style="margin:0 0 8px"></p>
-          <div id="planbar" class="planbar"></div>
+          <div class="summary three" id="gw-stats"></div>
+          <p id="gw-hint" class="muted small" style="margin:0 0 8px"></p>
           <div id="pitch" class="pitch"></div>
           <div id="bench" class="bench"></div>
+          <h3 class="sub-head">Changes from confirmed squad</h3>
+          <div id="changes"></div>
         </div>
+        <details class="card details">
+          <summary id="confirmed-title"></summary>
+          <div id="confirmed" class="tablewrap" style="margin-top:8px"></div>
+        </details>
         <div class="card">
           <div class="card-head"><h2>Chips</h2><span class="muted small" id="chips-note"></span></div>
           <div id="chips" class="chips"></div>
@@ -133,6 +139,6 @@
     </div>
   </div>
 
-  <script src="app.js?v=6"></script>
+  <script src="app.js?v=7"></script>
 </body>
 </html>

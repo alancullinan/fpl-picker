@@ -128,3 +128,14 @@ table.data td .sub.x { color: var(--accent); font-weight: 600; }
 .pitch.confirmed { filter: saturate(.6); }
 .chip.tappable { cursor: pointer; border: 1px solid var(--line); }
 .chip.tappable:active { background: var(--line); }
+.lastgw { margin: 0 0 10px; }
+.summary.three { grid-template-columns: repeat(3, 1fr); }
+.sub-head { font-size: 13px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; margin: 12px 0 6px; font-weight: 600; }
+.pill { position: absolute; top: -7px; left: 4px; background: var(--accent); color: #0f172a; font-size: 9px; font-weight: 800; padding: 1px 5px; border-radius: 6px; letter-spacing: .03em; }
+.pill.move { background: var(--panel2); color: var(--text); border: 1px solid var(--line); }
+.tag { display: inline-block; font-size: 10px; font-weight: 800; padding: 1px 5px; border-radius: 4px; background: var(--panel); color: var(--muted); letter-spacing: .03em; vertical-align: middle; }
+.tag.in { background: var(--accent); color: #0f172a; }
+details.details summary { cursor: pointer; font-weight: 600; list-style: none; }
+details.details summary::before { content: '▸ '; color: var(--muted); }
+details.details[open] summary::before { content: '▾ '; }
+table.data tr.benchrow td { opacity: .7; }

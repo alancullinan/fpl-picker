@@ -31,24 +31,14 @@ The rules it encodes are written up in `.claude/skills/fpl/SKILL.md`.
 ## Planning mode
 
 The public FPL API only publishes a squad after the gameweek deadline, so changes you make
-in the FPL app for the upcoming gameweek are invisible until then. Planning mode fills the
-gap: from the confirmed squad, tap players to transfer them out, bring players in from the
-Players tab, swap starters and bench, set captain and vice, and tap a chip in the Chips card
-to plan it. A toggle on the team card switches between the confirmed squad and the plan, so
-the two are never mixed on screen. The plan is kept
-in the browser, checks budget, the three-per-club limit, formation and free transfers, and is
-cleared once FPL confirms a newer squad. It is a scratchpad; the transfers still have to be
-made in the FPL app.
-
-## Local
-
-```
-python3 pipeline/fetch.py          # needs access to fantasy.premierleague.com
-python3 pipeline/build.py
-python3 -m http.server 8000        # open http://localhost:8000
-```
-
-Both scripts use only the Python standard library.
+in the FPL app for the upcoming gameweek are invisible until then. The My Team tab therefore
+shows one thing: your squad for the upcoming gameweek, starting as a copy of the last
+confirmed squad. Tap players to transfer them out, bring players in from the Players tab,
+swap starters and bench, set captain and vice, and tap a chip in the Chips card. A "Changes
+from confirmed squad" list under the pitch records every difference, and the confirmed
+squad itself sits in a collapsible reference below. The plan is kept in the browser, checks
+budget, the three-per-club limit, formation and free transfers, and is cleared once FPL
+confirms a newer squad. It is a scratchpad; the transfers still have to be made in the FPL app.
 
 ## Data sources
 

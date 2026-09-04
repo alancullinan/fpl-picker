@@ -227,6 +227,7 @@ def build(raw, out):
             "chance": None if p.get("chance_of_playing_next_round") in (None, "None", "") else int(fnum(p["chance_of_playing_next_round"])),
             "form": fnum(p["form"]),
             "pts": int(fnum(p["total_points"])),
+            "ev_pts": int(fnum(p.get("event_points"))),
             "ppg": fnum(p.get("points_per_game")),
             "min": int(mins),
             "starts": int(starts),
