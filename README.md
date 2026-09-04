@@ -90,6 +90,8 @@ safe, and the site's domain must be listed under Authentication, Settings, Autho
   concurrently) for the minutes model.
 - [Vaastav's FPL dataset](https://github.com/vaastav/Fantasy-Premier-League): last season's
   per-player totals, used as a prior while the new season's sample is small.
+- The FPL API's overall league standings, sampled through the top 10,000, for ownership and
+  captaincy among strong managers (`pipeline/topmanagers.py`).
 - [Rotowire predicted lineups](https://www.rotowire.com/soccer/lineups.php): predicted XIs and
   injury tags for the upcoming matches, matched to FPL players by name within each club.
   Scraped from HTML, so treated as optional; `pipeline/lineups.py --html page.html` parses a

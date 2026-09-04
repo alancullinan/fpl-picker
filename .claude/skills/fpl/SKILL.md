@@ -144,6 +144,25 @@ omits pending moves. The site's planning mode holds pre-deadline intentions in t
 it is not in the bundle, so ask the user what they have planned rather than assuming the
 confirmed squad is current.
 
+## Ownership among the field
+
+`pipeline/topmanagers.py` samples squads spread through the top 10,000 of the overall league
+and counts ownership and captaincy. The bundle carries `town` (ownership among that sample),
+`tcap` (captaincy) and `teo` (effective ownership, captain counted twice) per player, and
+`top` (sample size, gameweek, rank range) at the top level. Use it for risk, never for xP: a
+highly owned player you also own is a small risk whatever his xP, and a low-owned one is where
+rank is won or lost. Say "X% of the top 10k own him" rather than treating it as a prediction.
+
+## The transfer solver
+
+The site runs a beam search over transfer sequences for the next 3-6 gameweeks (in `app.js`,
+`Solver`). Each gameweek a squad may make none, one or two transfers; states are scored by the
+points their best XI would take across the horizon, minus hits, and the best two dozen squads
+carry forward. It obeys budget, three per club, squad shape and free-transfer accrual, and it
+reports the plan against doing nothing. It is a heuristic, not a proof of optimality, it
+assumes selling at current price, and it does not plan chips. When recommending from it, quote
+the projected gain over holding and say it ignores chips.
+
 ## Weekly workflow
 
 1. Confirm the data is fresh (`generated` in the bundle, or the footer of the site). The

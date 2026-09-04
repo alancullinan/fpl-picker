@@ -101,6 +101,9 @@ def build(raw, out):
     prev = load_prev(raw)
     fixture_hist = load(raw, "element-history.json") or {}
     lineups = load(raw, "lineups.json") or {}
+    top = load(raw, "top-picks.json") or {}
+    top_n = top.get("sampled") or 0
+    top_counts = top.get("counts") or {}
     short_to_id = {t["short_name"]: tid for tid, t in teams.items()}
     lineup_of, inj_tag, team_has_lineup, lineup_status = {}, {}, {}, {}
     for m in lineups.get("matches", []):
@@ -165,6 +168,11 @@ def build(raw, out):
             "pos": pos,
             "price": p["now_cost"] / 10.0,
             "sel": fnum(p["selected_by_percent"]),
+            # Ownership among highly ranked managers, and effective ownership
+            # (a captain counts twice), as percentages of the sample.
+            "town": round(top_counts.get(str(p["id"]), [0, 0])[0] * 100.0 / top_n, 1) if top_n else None,
+            "teo": round((top_counts.get(str(p["id"]), [0, 0])[0] + top_counts.get(str(p["id"]), [0, 0])[1]) * 100.0 / top_n, 1) if top_n else None,
+            "tcap": round(top_counts.get(str(p["id"]), [0, 0])[1] * 100.0 / top_n, 1) if top_n else None,
             "status": p["status"],
             "news": p.get("news") or "",
             "chance": None if p.get("chance_of_playing_next_round") in (None, "None", "") else int(fnum(p["chance_of_playing_next_round"])),
@@ -309,6 +317,7 @@ def build(raw, out):
                     "finished": e.get("finished", False), "avg": e.get("average_entry_score"),
                     "top": e.get("highest_score")} for e in events],
         "chips": chips_def,
+        "top": {"gw": top.get("gw"), "sampled": top_n, "ranks": top.get("ranks")} if top_n else None,
         "lineups": {"source": lineups.get("source"), "fetched": lineups.get("fetched"),
                     "matches": [{"home": m["home"], "away": m["away"], "status": m["status"]} for m in lineups.get("matches", [])]} if lineups else None,
         "teams": team_out,

@@ -21,7 +21,7 @@
 
   let D = null;
   let byId = new Map();
-  const defaults = { view: 'team', pos: 0, team: 0, price: '', avail: true, mine: false, search: '', sort: 'xpn', dir: -1, horizon: 5, xh: 5 };
+  const defaults = { view: 'team', pos: 0, team: 0, price: '', avail: true, mine: false, search: '', sort: 'xpn', dir: -1, horizon: 5, xh: 5, solveWeeks: 4 };
   let S = { ...defaults };
   try { S = { ...defaults, ...JSON.parse(localStorage.getItem('fplpicker') || '{}') }; } catch (e) { /* fresh */ }
   const persist = () => { try { localStorage.setItem('fplpicker', JSON.stringify(S)); } catch (e) { /* ignore */ } Sync.pushSettings(); };
@@ -176,7 +176,8 @@
     renderFixtures();
     showView(S.view);
     Sync.start();
-    $('#generated').textContent = 'Data refreshed ' + relTime(D.generated) + ' (' + fmtDate(D.generated) + ').' + (D.lineups ? ` Predicted lineups: ${D.lineups.matches.length} matches from Rotowire.` : ' No predicted lineups in this refresh.');
+    $('#generated').textContent = 'Data refreshed ' + relTime(D.generated) + ' (' + fmtDate(D.generated) + ').' + (D.lineups ? ` Predicted lineups: ${D.lineups.matches.length} matches from Rotowire.` : ' No predicted lineups in this refresh.')
+      + (D.top ? ` Ownership sampled from ${D.top.sampled} squads in the top ${commas(D.top.ranks[1])}.` : '');
   }
   function note(msg) { const st = $('#status'); st.textContent = msg; st.classList.remove('hidden'); }
 
@@ -240,6 +241,19 @@
     if (p.sp) bits.push(`${p.sp === 1 ? 'first' : 'number ' + p.sp} on corners and indirect free kicks`);
     if (p.fk) bits.push(`${p.fk === 1 ? 'first' : 'number ' + p.fk} on direct free kicks`);
     return bits.length ? bits.join(', ') : 'no set-piece duty listed';
+  }
+  // How the field is positioned: ownership among a sample of top managers, and
+  // effective ownership, where a captain counts twice. A player you own who is
+  // widely owned above you is a smaller risk than his raw ownership suggests.
+  function eoText(p) {
+    if (!D.top || p.town == null) return '<span class="muted">no sample</span>';
+    const diff = p.town - p.sel;
+    const lean = Math.abs(diff) < 4 ? '' : diff > 0
+      ? ` <span class="good">+${num(diff)} vs overall</span>`
+      : ` <span class="warn">${num(diff)} vs overall</span>`;
+    const cap = p.tcap > 0.5 ? `, captained by ${num(p.tcap)}%` : '';
+    return `owned by <b>${num(p.town)}%</b> of the top ${commas(D.top.ranks[1])}${cap}${lean}<br>`
+      + `<span class="muted">effective ownership ${num(p.teo)}% · sample of ${D.top.sampled} from GW${D.top.gw}</span>`;
   }
   function flag(p) {
     if (p.status === 'a') return '';
@@ -306,6 +320,7 @@
     renderChips(me);
     renderBestXI(list);
     renderOutlook(list);
+    renderSolver();
     renderTransfers(list);
     renderHistory(me);
   }
@@ -490,6 +505,7 @@
   // ---------- players ----------
   const BASE_COLS = [
     { k: 'name', l: 'Player', str: true }, { k: 'price', l: '£', f: (v) => num(v, 1) }, { k: 'sel', l: 'Sel%', f: (v) => num(v, 1) },
+    { k: 'town', l: 'Top%', f: (v) => (v == null ? '-' : num(v, 1)) },
     { k: 'form', l: 'Form' }, { k: 'pts', l: 'Pts', f: (v) => v }, { k: 'min', l: 'Min', f: (v) => v },
     { k: 'xg', l: 'xG' }, { k: 'xa', l: 'xA' }, { k: 'xgi90', l: 'xGI/90', f: (v) => num(v, 2) }, { k: 'dc90', l: 'DC/90' },
     { k: 'ep_next', l: 'FPL ep' },
@@ -615,7 +631,8 @@
         <span class="k">Season</span><span>${p.pts} pts · ${p.min} min · ${p.g}G ${p.a}A ${p.cs}CS · ${p.bonus} bonus</span>
         <span class="k">Per 90 (raw)</span><span>xGI ${num(p.xgi90, 2)} · xGC ${num(p.xgc90, 2)} · DC ${num(p.dc90)}${p.pos === 1 ? ' · saves ' + num(p.saves90) : ''}</span>
         <span class="k">Per 90 (model)</span><span>xG ${num(p.rates.xg90, 2)} · xA ${num(p.rates.xa90, 2)} · DC ${num(p.rates.dc90)} · bonus/g ${num(p.rates.bon, 2)} <span class="muted">(prior: ${p.rates.src === 'prev' ? 'last season' : 'price'})</span></span>
-        <span class="k">Ownership</span><span>${num(p.sel)}% · in ${commas(p.tin)} / out ${commas(p.tout)} this GW${p.dprice ? ' · price ' + (p.dprice > 0 ? '+' : '') + num(p.dprice) : ''}</span>
+        <span class="k">Ownership</span><span>${num(p.sel)}% overall · in ${commas(p.tin)} / out ${commas(p.tout)} this GW${p.dprice ? ' · price ' + (p.dprice > 0 ? '+' : '') + num(p.dprice) : ''}</span>
+        ${D.top ? `<span class="k">Among the best</span><span>${eoText(p)}</span>` : ''}
       </div>
       <div class="bar">${bar}</div><div>${legend}</div>
       <h2 style="margin-top:12px">Fixtures</h2><div style="line-height:1.9">${fx}</div>`);
@@ -711,6 +728,161 @@
       else { note('No new data after five minutes. Check the Actions page for the run.'); btn.disabled = false; btn.textContent = 'Refresh data'; }
     };
     setTimeout(poll, 20000);
+  }
+
+
+  // ---------- multi-week transfer solver ----------
+  // Beam search over transfer sequences. At each gameweek a state may make
+  // 0, 1 or 2 transfers; states are scored by the points their best XI would
+  // score across the horizon, minus any hits, and the best few are carried
+  // forward. This is a heuristic, not a proof of optimality, but it searches
+  // far wider than one-for-one swaps and it respects every squad rule.
+  const Solver = (() => {
+    const BEAM = 24;          // squads carried forward per gameweek
+    const CAND_IN = 5;        // replacements considered per outgoing player
+    const CAND_MOVES = 26;    // single transfers kept per state
+    const DOUBLE_FROM = 7;    // best singles combined into pairs
+
+    const gwXP = (id, w) => { const p = byId.get(id); return p ? (p.xp_gw[w] || 0) : 0; };
+
+    // Best starting XI for one gameweek, plus the captain, from 15 ids.
+    function weekScore(squad, w, chip) {
+      const by = { 1: [], 2: [], 3: [], 4: [] };
+      for (const id of squad) { const p = byId.get(id); if (p) by[p.pos].push(gwXP(id, w)); }
+      for (const k in by) by[k].sort((a, b) => b - a);
+      if (!by[1].length || by[2].length < 3 || by[3].length < 2 || !by[4].length) return 0;
+      let best = -1;
+      for (let d = 3; d <= 5; d++) for (let m = 2; m <= 5; m++) {
+        const f = 10 - d - m;
+        if (f < 1 || f > 3 || by[2].length < d || by[3].length < m || by[4].length < f) continue;
+        const xi = [by[1][0], ...by[2].slice(0, d), ...by[3].slice(0, m), ...by[4].slice(0, f)];
+        let sum = xi.reduce((a, b) => a + b, 0) + Math.max(...xi);   // captain doubles
+        if (chip === 'bboost') sum = squad.reduce((a, id) => a + gwXP(id, w), 0) + Math.max(...xi);
+        if (sum > best) best = sum;
+      }
+      return best < 0 ? 0 : best;
+    }
+
+    // Value of holding a player over the remaining horizon, used to rank moves.
+    const horizonValue = (id, w, weeks) => {
+      let t = 0;
+      for (let k = w; k < weeks; k++) t += gwXP(id, k);
+      return t;
+    };
+
+    function candidates(state, w, weeks) {
+      const squad = state.squad, owned = new Set(squad);
+      const clubs = {};
+      for (const id of squad) { const p = byId.get(id); clubs[p.team] = (clubs[p.team] || 0) + 1; }
+      const moves = [];
+      for (const outId of squad) {
+        const out = byId.get(outId);
+        const budget = state.bank + out.price;
+        const outVal = horizonValue(outId, w, weeks);
+        const pool = D.players
+          .filter((q) => q.pos === out.pos && !owned.has(q.id) && q.price <= budget + 1e-9 && fit(q)
+                      && (q.team === out.team || (clubs[q.team] || 0) < 3))
+          .sort((a, b) => horizonValue(b.id, w, weeks) - horizonValue(a.id, w, weeks))
+          .slice(0, CAND_IN);
+        for (const q of pool) {
+          const gain = horizonValue(q.id, w, weeks) - outVal;
+          if (gain > 0.2) moves.push({ out: outId, in: q.id, gain, bank: state.bank + out.price - q.price });
+        }
+      }
+      moves.sort((a, b) => b.gain - a.gain);
+      return moves.slice(0, CAND_MOVES);
+    }
+
+    function applyMoves(state, list, w) {
+      const squad = state.squad.filter((id) => !list.some((m) => m.out === id)).concat(list.map((m) => m.in));
+      let bank = state.bank;
+      for (const m of list) bank += byId.get(m.out).price - byId.get(m.in).price;
+      const used = list.length;
+      const hit = Math.max(0, used - state.ft) * 4;
+      const ft = hit > 0 ? 1 : Math.min(5, state.ft - used + 1);
+      return {
+        squad, bank: Math.round(bank * 10) / 10, ft, hit,
+        moves: state.moves.concat([{ gw: D.next_gw + w, list, hit }]),
+        score: 0,
+      };
+    }
+
+    function run(startSquad, bank, ft, weeks) {
+      let beam = [{ squad: [...startSquad], bank, ft, moves: [], score: 0 }];
+      for (let w = 0; w < weeks; w++) {
+        const next = [];
+        for (const st of beam) {
+          const options = [[]];
+          const singles = candidates(st, w, weeks);
+          for (const m of singles) options.push([m]);
+          // Pairs, from the strongest singles, skipping incompatible ones.
+          const topN = singles.slice(0, DOUBLE_FROM);
+          for (let i = 0; i < topN.length; i++) for (let j = i + 1; j < topN.length; j++) {
+            const a = topN[i], b = topN[j];
+            if (a.out === b.out || a.in === b.in) continue;
+            if (st.bank + byId.get(a.out).price + byId.get(b.out).price - byId.get(a.in).price - byId.get(b.in).price < -1e-9) continue;
+            const t = {}; // three-per-club across both incomings
+            for (const id of st.squad) { if (id === a.out || id === b.out) continue; const p = byId.get(id); t[p.team] = (t[p.team] || 0) + 1; }
+            const ta = byId.get(a.in).team, tb = byId.get(b.in).team;
+            t[ta] = (t[ta] || 0) + 1; t[tb] = (t[tb] || 0) + 1;
+            if (t[ta] > 3 || t[tb] > 3) continue;
+            options.push([a, b]);
+          }
+          for (const list of options) {
+            const ns = applyMoves(st, list, w);
+            if (ns.bank < -1e-9) continue;
+            ns.score = st.score + weekScore(ns.squad, w) - ns.hit;
+            next.push(ns);
+          }
+        }
+        // Keep the best distinct squads.
+        next.sort((a, b) => b.score - a.score);
+        const seen = new Set(); beam = [];
+        for (const st of next) {
+          const key = [...st.squad].sort((x, y) => x - y).join(',') + '|' + st.ft;
+          if (seen.has(key)) continue;
+          seen.add(key); beam.push(st);
+          if (beam.length >= BEAM) break;
+        }
+        if (!beam.length) return null;
+      }
+      return beam[0];
+    }
+    return { run, weekScore };
+  })();
+
+  function renderSolver() {
+    if (!$('#solver-out') || !D.me || !D.me.picks.length) return;
+    const weeks = Math.min(S.solveWeeks || 4, (D.players[0].xp_gw || []).length);
+    $('#solver-note').textContent = `${weeks} gameweeks · ${D.me.free_transfers ?? 1} free now`;
+    const seg = $('#solver-weeks');
+    seg.innerHTML = [3, 4, 5, 6].map((k) => `<button data-n="${k}" class="${k === weeks ? 'active' : ''}">${k} GWs</button>`).join('');
+    seg.querySelectorAll('button').forEach((b) => b.addEventListener('click', () => { S.solveWeeks = Number(b.dataset.n); persist(); renderSolver(); }));
+    $('#solver-run').onclick = () => {
+      const t0 = performance.now();
+      const squad = picks().map((x) => x.id);
+      const res = Solver.run(squad, bank(), D.me.free_transfers ?? 1, weeks);
+      const ms = Math.round(performance.now() - t0);
+      const out = $('#solver-out');
+      if (!res) { out.innerHTML = '<p class="muted small">No valid plan found.</p>'; return; }
+      // What the same squad scores if nothing is done, as the comparison.
+      let hold = 0;
+      for (let w = 0; w < weeks; w++) hold += Solver.weekScore(squad, w);
+      const rows = [];
+      for (const step of res.moves) {
+        if (!step.list.length) { rows.push(`<div class="item"><div class="l"><b>GW${step.gw}</b> <span class="muted">roll the transfer</span></div></div>`); continue; }
+        const desc = step.list.map((m) => `${esc(byId.get(m.out).name)}<span class="arrow">→</span><b>${esc(byId.get(m.in).name)}</b>`).join(' &nbsp;·&nbsp; ');
+        rows.push(`<div class="item"><div class="l"><b>GW${step.gw}</b> ${desc}</div><div class="r">${step.hit ? `<span class="bad">-${step.hit}</span>` : '<span class="good">free</span>'}</div></div>`);
+      }
+      out.innerHTML = `<div class="list">${rows.join('')}</div>
+        <p class="muted small">Projects <b>${num(res.score)}</b> points over ${weeks} gameweeks against <b>${num(hold)}</b> for making no transfers, hits included. Assumes selling at current price and ignores chips. Searched in ${ms} ms.</p>`;
+      const first = res.moves[0];
+      if (first && first.list.length) {
+        const b = el('button', 'btn primary small', 'Apply GW' + first.gw + ' move' + (first.list.length > 1 ? 's' : '') + ' to plan');
+        b.addEventListener('click', () => { for (const m of first.list) applyTransfer(m.out, m.in); });
+        out.appendChild(b);
+      }
+    };
   }
 
   // ---------- cross-device sync (Firebase, optional) ----------

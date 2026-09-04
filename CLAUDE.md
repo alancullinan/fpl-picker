@@ -17,6 +17,8 @@ Pages from the `main` branch root.
 - `pipeline/lineups.py`: Rotowire predicted lineups and injury tags matched to FPL ids. HTML
   scraping, best effort; when Rotowire's markup changes, touch the debug-lineups workflow to
   capture a fresh page and develop against it with `--html`.
+- `pipeline/topmanagers.py`: samples squads from the top of the overall league for ownership
+  and effective ownership. Optional; a failure leaves the site without those columns.
 - `pipeline/model.py`: the expected-points model as pure functions of "what was known at the
   deadline", with every tunable in `PARAMS`. Shared by build and backtest.
 - `pipeline/build.py`: raw into `data/fpl.json`, the single bundle the site reads, plus a

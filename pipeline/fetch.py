@@ -16,6 +16,8 @@ Files written (all raw API responses, untouched):
                           has featured or is flagged, from element-summary (one call each)
   lineups.json            predicted lineups and injury tags from Rotowire, matched to FPL ids
                           (see lineups.py; best effort)
+  top-picks.json          ownership and captaincy among a sample of highly ranked managers
+                          (see topmanagers.py; best effort)
 """
 import argparse
 import concurrent.futures
@@ -128,6 +130,12 @@ def main():
         lineups.write(lineups.match_players(lineups.parse(body), bootstrap), args.out)
     except Exception as e:  # noqa: BLE001 - lineups are optional
         print(f"lineups unavailable: {e}", file=sys.stderr)
+    try:
+        import topmanagers  # noqa: PLC0415 - sibling module, kept optional
+        sys.argv = ["topmanagers", "--out", args.out]
+        topmanagers.main()
+    except Exception as e:  # noqa: BLE001 - the sample is optional
+        print(f"top-manager sample unavailable: {e}", file=sys.stderr)
 
     entry = get(f"entry/{args.entry}")
     if entry is None:

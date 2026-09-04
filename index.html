@@ -68,6 +68,14 @@
           <div id="outlook" class="tablewrap"></div>
         </div>
         <div class="card">
+          <div class="card-head"><h2>Transfer plan</h2><span class="muted small" id="solver-note"></span></div>
+          <div class="planrow">
+            <div class="seg" id="solver-weeks"></div>
+            <button class="btn primary small" id="solver-run">Find a plan</button>
+          </div>
+          <div id="solver-out"><p class="muted small">Searches transfer sequences over the next few gameweeks, obeying budget, the three-per-club limit and free transfers, and reports the best one it finds.</p></div>
+        </div>
+        <div class="card">
           <div class="card-head"><h2>Transfer ideas</h2><span class="muted" id="transfers-note">one-for-one, within budget, next 5 GWs</span></div>
           <div id="transfers"></div>
         </div>
@@ -144,6 +152,6 @@
   </div>
 
   <script src="firebase-config.js?v=2"></script>
-  <script src="app.js?v=12"></script>
+  <script src="app.js?v=14"></script>
 </body>
 </html>
