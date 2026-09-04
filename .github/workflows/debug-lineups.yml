@@ -1,0 +1,29 @@
+name: Debug lineups page
+
+# Throwaway: saves the raw Rotowire page to a debug branch so the parser can
+# be developed against real markup. Delete once the parser is stable.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  capture:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Fetch page
+        run: python pipeline/lineups.py --fetch-only --raw debug
+      - name: Push to debug branch
+        run: |
+          git config user.name "fpl-picker-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git checkout --orphan debug-lineups
+          git rm -rfq --cached .
+          git add -f debug/lineups.html
+          git commit -qm "debug: lineups page $(date -u +%Y-%m-%dT%H:%MZ)"
+          git push -f origin debug-lineups
