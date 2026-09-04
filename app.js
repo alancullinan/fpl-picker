@@ -147,12 +147,17 @@
   function renderChips(me) {
     const box = $('#chips'); box.innerHTML = '';
     const used = me.chips_used || [];
-    const defs = D.chips && D.chips.length ? D.chips : [];
+    // The API's chip "number" is not the set index; derive the set from each
+    // chip's window and order the grid set by set, wildcard first.
+    const order = ['wildcard', 'freehit', 'bboost', '3xc'];
+    const starts = [...new Set((D.chips || []).map((c) => c.start))].sort((a, c) => a - c);
+    const defs = [...(D.chips || [])].sort((a, c) => (a.start - c.start) || (order.indexOf(a.name) - order.indexOf(c.name)));
     for (const c of defs) {
+      const set = starts.indexOf(c.start) + 1;
       const u = used.find((x) => x.name === c.name && x.gw >= c.start && x.gw <= c.stop);
       const future = D.next_gw && D.next_gw < c.start;
       const div = el('div', 'chip' + (u ? ' used' : future ? ' future' : ''));
-      div.innerHTML = `<div class="k">${CHIP_LABEL[c.name] || c.name}${c.number}</div><div class="small muted">${u ? 'GW' + u.gw : 'GW' + c.start + '–' + c.stop}</div>`;
+      div.innerHTML = `<div class="k">${CHIP_LABEL[c.name] || c.name}${set}</div><div class="small muted">${u ? 'GW' + u.gw : 'GW' + c.start + '–' + c.stop}</div>`;
       div.title = CHIP_NAME[c.name] || c.name;
       box.appendChild(div);
     }
