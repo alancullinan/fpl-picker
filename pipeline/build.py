@@ -100,6 +100,20 @@ def build(raw, out):
 
     prev = load_prev(raw)
     history = load(raw, "element-history.json") or {}
+    lineups = load(raw, "lineups.json") or {}
+    short_to_id = {t["short_name"]: tid for tid, t in teams.items()}
+    lineup_of, inj_tag, team_has_lineup, lineup_status = {}, {}, {}, {}
+    for m in lineups.get("matches", []):
+        for side in ("home", "away"):
+            tid = short_to_id.get(m[side])
+            if tid is None:
+                continue
+            team_has_lineup[tid] = True
+            lineup_status[tid] = m.get("status", "expected")
+            for pid in m[side + "_xi"]:
+                lineup_of[pid] = "xi"
+        for pid, tag in (m.get("injuries") or {}).items():
+            inj_tag[int(pid)] = tag
     median_price = {}
     for pos in POS:
         prices = sorted(e["now_cost"] for e in bs["elements"] if e["element_type"] == pos)
@@ -124,6 +138,10 @@ def build(raw, out):
         # Most recent fixture first, as (minutes, started), for the minutes model.
         rows = history.get(str(p["id"])) or []
         state["recent"] = [(r[1], bool(r[2])) for r in reversed(rows)][:12]
+        lineup = lineup_of.get(p["id"]) or ("bench" if team_has_lineup.get(p["team"]) else None)
+        state["lineup"] = lineup
+        state["lineup_confirmed"] = lineup_status.get(p["team"]) == "confirmed"
+        state["inj_tag"] = inj_tag.get(p["id"])
         fx_list = upcoming.get(p["team"], {})
         fixtures_by_gw = [fx_list.get(gw, []) for gw in range(next_id, next_id + HORIZON)] if next_id else []
         gw_xp, parts1, r, p_play = model.player_xp(state, prior, fixtures_by_gw, team_xgc[p["team"]], P)
@@ -171,6 +189,8 @@ def build(raw, out):
             "p_60": round(p_60, 2),
             "xmin": int(round(exp_frac * 90)),
             "recent": [int(r[1]) for r in rows[-6:]],
+            "lineup": lineup,
+            "inj_tag": inj_tag.get(p["id"]),
             "xp1": xp1,
             "xp5": xp5,
             "xp_gw": gw_xp,
@@ -256,6 +276,8 @@ def build(raw, out):
                     "finished": e.get("finished", False), "avg": e.get("average_entry_score"),
                     "top": e.get("highest_score")} for e in events],
         "chips": chips_def,
+        "lineups": {"source": lineups.get("source"), "fetched": lineups.get("fetched"),
+                    "matches": [{"home": m["home"], "away": m["away"], "status": m["status"]} for m in lineups.get("matches", [])]} if lineups else None,
         "teams": team_out,
         "players": players,
         "me": my,

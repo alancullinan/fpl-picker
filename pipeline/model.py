@@ -43,6 +43,11 @@ PARAMS = {
     "mins_start": 85.0,       # default minutes for a start
     "p60_start": 0.9,         # default chance a start reaches 60 minutes
     "unseen_start": 0.35,     # prior start rate with no history at all
+    # Predicted lineups (Rotowire): how far to move the start probability
+    "lineup_w": 0.7,          # weight of a predicted lineup vs the minutes history
+    "lineup_w_confirmed": 0.95,
+    "lineup_out": 0.25,       # availability cap for a player Rotowire tags OUT
+    "lineup_ques": 0.75,      # availability cap for a player Rotowire tags QUES
 }
 
 
@@ -89,9 +94,14 @@ def minutes_probs(state, P=PARAMS):
     chance = state.get("chance", 1.0)
     if state.get("status") in ("u", "n"):
         chance = 0.0
+    tag = state.get("inj_tag")
+    if tag in ("OUT", "SUS", "INJ"):
+        chance = min(chance, P["lineup_out"])
+    elif tag in ("QUES", "DOUB", "GTD"):
+        chance = min(chance, P["lineup_ques"])
     recent = state.get("recent")
     if P["minutes_model"] >= 1 and recent:
-        return _recent_minutes(recent, state.get("prior_start", P["unseen_start"]), chance, P)
+        return _recent_minutes(recent, state.get("prior_start", P["unseen_start"]), chance, P, state.get("lineup"), state.get("lineup_confirmed", False))
     mins, games = state["mins"], max(state["team_games"], 1)
     if mins > 0:
         start_rate = min(1.0, state["starts"] / games)
@@ -104,7 +114,7 @@ def minutes_probs(state, P=PARAMS):
     return p_play, p_60, p_play
 
 
-def _recent_minutes(recent, prior_start, chance, P):
+def _recent_minutes(recent, prior_start, chance, P, lineup=None, confirmed=False):
     d, wsum, w_start, w_sub = P["min_decay"], 0.0, 0.0, 0.0
     sm = s60 = sw = 0.0   # weighted minutes, 60+ flags and weight over starts
     bm = bw = 0.0         # weighted minutes and weight over sub appearances
@@ -121,6 +131,16 @@ def _recent_minutes(recent, prior_start, chance, P):
     m_start = sm / sw if sw else P["mins_start"]
     p60_start = s60 / sw if sw else P["p60_start"]
     m_sub = bm / bw if bw else P["mins_sub"]
+    # A predicted lineup pulls the start probability towards 1 (named) or 0
+    # (team has a lineup, player not in it); substitutes come from the rest.
+    if lineup in ("xi", "bench"):
+        w = P["lineup_w_confirmed"] if confirmed else P["lineup_w"]
+        if lineup == "xi":
+            p_start = p_start + (1.0 - p_start) * w
+            p_sub = p_sub * (1.0 - w)
+        else:
+            p_start = p_start * (1.0 - w)
+            p_sub = min(1.0 - p_start, p_sub + (1.0 - p_sub) * w * 0.3)
     p_play = chance * (p_start + p_sub)
     p_60 = chance * (p_start * p60_start + p_sub * P["p60_sub"])
     frac = chance * (p_start * m_start + p_sub * m_sub) / 90.0

@@ -1,12 +1,13 @@
 name: Debug lineups page
 
-# Throwaway: saves the raw Rotowire page to a debug branch so the parser can
-# be developed against real markup. Delete once the parser is stable.
+# Maintenance aid: saves the raw Rotowire page to the debug-lineups branch so
+# the parser can be checked against real markup when Rotowire changes theirs.
+# Trigger by touching this file (or Run workflow).
 on:
   workflow_dispatch:
   push:
     branches: [main]
-    paths: ["pipeline/lineups.py", ".github/workflows/debug-lineups.yml"]
+    paths: [".github/workflows/debug-lineups.yml"]
 
 permissions:
   contents: write

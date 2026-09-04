@@ -139,3 +139,5 @@ details.details summary { cursor: pointer; font-weight: 600; list-style: none; }
 details.details summary::before { content: '▸ '; color: var(--muted); }
 details.details[open] summary::before { content: '▾ '; }
 table.data tr.benchrow td { opacity: .7; }
+.lu { display: inline-block; width: 12px; font-size: 11px; font-weight: 800; margin-right: 2px; vertical-align: middle; }
+.lu.xi { color: var(--good); } .lu.bench { color: var(--muted); } .lu.out { color: var(--bad); } .lu.ques { color: var(--warn); }

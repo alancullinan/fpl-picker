@@ -47,43 +47,67 @@ def strip_tags(s):
 
 
 def parse(body):
-    """Return [{home, away, status, kickoff, home_players:[(name,pos)], away_players:[...]}]."""
+    """Return [{home, away, status, kickoff, home_players, away_players, home_inj, away_inj}].
+
+    Players are (full name, position) from the link title; injuries are
+    (full name, status) with Rotowire's OUT/QUES/... tag.
+    """
     matches = []
-    # Each match sits in a <div class="lineup is-soccer ..."> block; split on those.
     blocks = re.split(r'<div class="lineup is-soccer', body)[1:]
     for blk in blocks:
-        m = {"home": None, "away": None, "status": "expected", "kickoff": None, "home_players": [], "away_players": []}
-        abbrs = re.findall(r'class="lineup__abbr[^"]*">\s*([A-Z]{2,4})\s*<', blk)
-        if len(abbrs) >= 2:
-            m["away"], m["home"] = abbrs[0], abbrs[1]  # Rotowire lists visitor first
+        m = {"home": None, "away": None, "status": "expected", "kickoff": None,
+             "home_players": [], "away_players": [], "home_inj": [], "away_inj": []}
+        for side in ("home", "visit"):
+            t = re.search(r'class="lineup__team is-%s[^>]*>.*?class="lineup__abbr[^"]*">\s*([A-Z]{2,4})\s*<' % side, blk, re.S)
+            if t:
+                m["home" if side == "home" else "away"] = t.group(1)
         t = re.search(r'class="lineup__time[^"]*">(.*?)</div>', blk, re.S)
         if t:
             m["kickoff"] = strip_tags(t.group(1))
-        if re.search(r'is-confirmed|Confirmed Lineup', blk):
-            m["status"] = "confirmed"
         for side in ("visit", "home"):
             lst = re.search(r'<ul class="lineup__list is-%s[^"]*">(.*?)</ul>' % side, blk, re.S)
             if not lst:
                 continue
-            players = []
-            for li in re.findall(r'<li class="lineup__player[^"]*"[^>]*>(.*?)</li>', lst.group(1), re.S):
-                pos = re.search(r'class="lineup__pos[^"]*">\s*([A-Z]{1,3})\s*<', li)
-                name = re.search(r'<a[^>]*>(.*?)</a>', li, re.S)
-                if name:
-                    players.append((strip_tags(name.group(1)), pos.group(1) if pos else ""))
-            m["away_players" if side == "visit" else "home_players"] = players[:11]
+            body_ul = lst.group(1)
+            if re.search(r'lineup__status is-confirmed|Confirmed Lineup', body_ul):
+                m["status"] = "confirmed"
+            # The XI comes first; an "Injuries" title separates the injured list.
+            parts = re.split(r'lineup__title[^>]*>\s*Injuries', body_ul, maxsplit=1)
+            key = "away" if side == "visit" else "home"
+            m[key + "_players"] = _players(parts[0])[:11]
+            if len(parts) > 1:
+                m[key + "_inj"] = _players(parts[1], inj=True)
         if m["home"] and m["away"] and (m["home_players"] or m["away_players"]):
             matches.append(m)
     return matches
 
 
+def _players(fragment, inj=False):
+    out = []
+    for li in re.findall(r'<li class="lineup__player[^"]*"[^>]*>(.*?)</li>', fragment, re.S):
+        a = re.search(r'<a[^>]*title="([^"]*)"[^>]*>(.*?)</a>', li, re.S)
+        if not a:
+            continue
+        name = html.unescape(a.group(1)).strip() or strip_tags(a.group(2))
+        if inj:
+            st = re.search(r'class="lineup__inj[^"]*">\s*([A-Z]+)', li)
+            out.append((name, st.group(1) if st else "OUT"))
+        else:
+            pos = re.search(r'class="lineup__pos[^"]*">\s*([A-Z]{1,3})\s*<', li)
+            out.append((name, pos.group(1) if pos else ""))
+    return out
+
+
+_SPECIAL = str.maketrans({"ø": "o", "Ø": "O", "ß": "ss", "ı": "i", "ł": "l", "Ł": "L", "đ": "d", "Đ": "D", "æ": "ae", "Æ": "AE", "œ": "oe", "þ": "th"})
+
+
 def norm(s):
-    s = unicodedata.normalize("NFKD", s).encode("ascii", "ignore").decode()
-    return re.sub(r"[^a-z ]", "", s.lower()).strip()
+    s = unicodedata.normalize("NFKD", s.translate(_SPECIAL)).encode("ascii", "ignore").decode()
+    return re.sub(r"[^a-z ]", "", s.lower().replace("-", " ")).strip()
 
 
 def match_players(matches, bootstrap):
-    """Attach FPL ids using surname + team, then initial + surname, then web_name."""
+    """Attach FPL ids: full name, then surname within the club, then initial + surname."""
     teams = {t["id"]: t["short_name"] for t in bootstrap["teams"]}
     by_team = {}
     for e in bootstrap["elements"]:
@@ -93,21 +117,21 @@ def match_players(matches, bootstrap):
         cands = by_team.get(short, [])
         n = norm(name)
         parts = n.split()
-        if not parts:
+        if not parts or not cands:
             return None
+        full = [e for e in cands if norm(f"{e['first_name']} {e['second_name']}") == n or norm(e["web_name"]) == n]
+        if len(full) == 1:
+            return full[0]["id"]
         surname = parts[-1]
-        initial = parts[0][0] if len(parts) > 1 else None
-        exact = [e for e in cands if norm(e["web_name"]) == n or norm(f"{e['first_name']} {e['second_name']}") == n]
-        if len(exact) == 1:
-            return exact[0]["id"]
         sur = [e for e in cands if norm(e["second_name"]).split()[-1:] == [surname] or norm(e["web_name"]).split()[-1:] == [surname]]
         if len(sur) == 1:
             return sur[0]["id"]
-        if initial:
-            ini = [e for e in sur if norm(e["first_name"])[:1] == initial]
+        if len(parts) > 1:
+            ini = [e for e in sur if norm(e["first_name"])[:1] == parts[0][:1]]
             if len(ini) == 1:
                 return ini[0]["id"]
-        loose = [e for e in cands if surname in norm(e["web_name"]) or surname in norm(e["second_name"])]
+        # Last resort: every word of the Rotowire name appears in the FPL full name.
+        loose = [e for e in cands if all(w in norm(f"{e['first_name']} {e['second_name']} {e['web_name']}").split() for w in parts)]
         if len(loose) == 1:
             return loose[0]["id"]
         return None
@@ -115,16 +139,33 @@ def match_players(matches, bootstrap):
     out = []
     for m in matches:
         h, a = ABBR.get(m["home"], m["home"]), ABBR.get(m["away"], m["away"])
-        rec = {"home": h, "away": a, "status": m["status"], "kickoff": m["kickoff"], "home_xi": [], "away_xi": [], "unmatched": []}
+        rec = {"home": h, "away": a, "status": m["status"], "kickoff": m["kickoff"],
+               "home_xi": [], "away_xi": [], "injuries": {}, "unmatched": []}
         for side, short in (("home", h), ("away", a)):
+            if short not in by_team:
+                rec["unmatched"].append(f"team:{m[side]}")
+                continue
             for name, _pos in m[side + "_players"]:
                 pid = find(name, short)
                 if pid:
                     rec[side + "_xi"].append(pid)
                 else:
                     rec["unmatched"].append(f"{short}:{name}")
+            for name, st in m[side + "_inj"]:
+                pid = find(name, short)
+                if pid:
+                    rec["injuries"][str(pid)] = st
         out.append(rec)
     return out
+
+
+def write(out, raw):
+    matched = sum(len(m["home_xi"]) + len(m["away_xi"]) for m in out)
+    inj = sum(len(m["injuries"]) for m in out)
+    unmatched = [u for m in out for u in m["unmatched"]]
+    print(f"lineups: {len(out)} matches, {matched} starters and {inj} injuries matched; unmatched {len(unmatched)}: {unmatched[:40]}")
+    with open(os.path.join(raw, "lineups.json"), "w", encoding="utf-8") as f:
+        json.dump({"source": "rotowire", "fetched": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"), "matches": out}, f, separators=(",", ":"))
 
 
 def main():
@@ -149,12 +190,7 @@ def main():
         return
     with open(bs_path, encoding="utf-8") as f:
         bs = json.load(f)
-    out = match_players(matches, bs)
-    matched = sum(len(m["home_xi"]) + len(m["away_xi"]) for m in out)
-    unmatched = [u for m in out for u in m["unmatched"]]
-    print(f"matched {matched} players; unmatched {len(unmatched)}: {unmatched[:30]}")
-    with open(os.path.join(a.raw, "lineups.json"), "w", encoding="utf-8") as f:
-        json.dump({"source": "rotowire", "fetched": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"), "matches": out}, f, separators=(",", ":"))
+    write(match_players(matches, bs), a.raw)
 
 
 if __name__ == "__main__":

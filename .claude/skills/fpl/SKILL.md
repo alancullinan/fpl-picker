@@ -109,8 +109,16 @@ rates scale by expected minutes, so a habitual 20-minute substitute is valued as
 FPL's availability flag multiplies everything. The bundle exposes `p_play`, `p_60`, `xmin`
 (expected minutes) and `recent` (last six fixtures' minutes) per player.
 
-Known weaknesses: no penalty-taker bonus, no predicted-lineup input, bonus is crude, and
-FPL's FDR is a blunt instrument. Improve these before adding anything else.
+Predicted lineups (Rotowire, `pipeline/lineups.py`): a player named in the predicted XI has
+their start probability pulled 70% of the way to 1 (95% once confirmed); a player whose team
+has a predicted XI without them is pulled 70% of the way to 0, with a small substitute
+allowance. Rotowire's OUT and QUES tags cap availability at 25% and 75% unless FPL's own
+flag is already lower. The bundle carries `lineup` (`xi`, `bench` or null) and `inj_tag` per
+player and `lineups` (source, fetch time, matches) at the top level. Lineups cannot be
+backtested (no history exists), so the weights are judgement; watch the live snapshots.
+
+Known weaknesses: no penalty-taker bonus, bonus is crude, and FPL's FDR is a blunt
+instrument. Improve these before adding anything else.
 
 ## Changing the model
 

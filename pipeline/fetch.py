@@ -14,9 +14,14 @@ Files written (all raw API responses, untouched):
                           the prior for per-90 rates while this season's sample is small
   element-history.json    per-fixture minutes and starts this season for every player who
                           has featured or is flagged, from element-summary (one call each)
+  lineups.json            predicted lineups and injury tags from Rotowire, matched to FPL ids
+                          (see lineups.py; best effort)
 """
 import argparse
 import concurrent.futures
+import os.path
+import sys as _sys
+_sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import json
 import os
 import sys
@@ -117,6 +122,12 @@ def main():
     save(args.out, "fixtures.json", get("fixtures"))
     fetch_prev_season(bootstrap, args.out)
     fetch_element_history(bootstrap, args.out)
+    try:
+        import lineups  # noqa: PLC0415 - sibling module, kept optional
+        body = lineups.fetch(os.path.join(args.out, "lineups.html"))
+        lineups.write(lineups.match_players(lineups.parse(body), bootstrap), args.out)
+    except Exception as e:  # noqa: BLE001 - lineups are optional
+        print(f"lineups unavailable: {e}", file=sys.stderr)
 
     entry = get(f"entry/{args.entry}")
     if entry is None:

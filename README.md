@@ -68,3 +68,7 @@ confirms a newer squad. It is a scratchpad; the transfers still have to be made 
   concurrently) for the minutes model.
 - [Vaastav's FPL dataset](https://github.com/vaastav/Fantasy-Premier-League): last season's
   per-player totals, used as a prior while the new season's sample is small.
+- [Rotowire predicted lineups](https://www.rotowire.com/soccer/lineups.php): predicted XIs and
+  injury tags for the upcoming matches, matched to FPL players by name within each club.
+  Scraped from HTML, so treated as optional; `pipeline/lineups.py --html page.html` parses a
+  saved page, and the "Debug lineups page" workflow captures one to the `debug-lineups` branch.

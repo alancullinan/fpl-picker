@@ -14,6 +14,9 @@ Pages from the `main` branch root.
 - `pipeline/fetch.py`: raw FPL API responses into `data/raw/` (gitignored). Standard library only.
   Includes one `element-summary` call per featured player (threaded, best effort); a player
   without history falls back to season totals in the minutes model.
+- `pipeline/lineups.py`: Rotowire predicted lineups and injury tags matched to FPL ids. HTML
+  scraping, best effort; when Rotowire's markup changes, touch the debug-lineups workflow to
+  capture a fresh page and develop against it with `--html`.
 - `pipeline/model.py`: the expected-points model as pure functions of "what was known at the
   deadline", with every tunable in `PARAMS`. Shared by build and backtest.
 - `pipeline/build.py`: raw into `data/fpl.json`, the single bundle the site reads, plus a

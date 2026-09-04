@@ -169,7 +169,7 @@
     renderPlayers();
     renderFixtures();
     showView(S.view);
-    $('#generated').textContent = 'Data refreshed ' + relTime(D.generated) + ' (' + fmtDate(D.generated) + ').';
+    $('#generated').textContent = 'Data refreshed ' + relTime(D.generated) + ' (' + fmtDate(D.generated) + ').' + (D.lineups ? ` Predicted lineups: ${D.lineups.matches.length} matches from Rotowire.` : ' No predicted lineups in this refresh.');
   }
   function note(msg) { const st = $('#status'); st.textContent = msg; st.classList.remove('hidden'); }
 
@@ -200,6 +200,22 @@
     const t = teamOf(p), out = [];
     for (let i = 0; i < n; i++) { const gw = t.fixtures[i] || []; out.push(gw.length ? gw.map(fxChip).join('') : fxChip(null)); }
     return out;
+  }
+  // Predicted-lineup marker: filled dot = named in the predicted XI, hollow =
+  // team has a predicted XI without them, cross = tagged out or doubtful.
+  function luDot(p) {
+    if (['OUT', 'SUS', 'INJ'].includes(p.inj_tag)) return `<span class="lu out" title="Rotowire: ${p.inj_tag === 'SUS' ? 'suspended' : 'out'}">✕</span>`;
+    if (p.inj_tag) return '<span class="lu ques" title="Rotowire: doubtful">?</span>';
+    if (p.lineup === 'xi') return '<span class="lu xi" title="In the predicted lineup">●</span>';
+    if (p.lineup === 'bench') return '<span class="lu bench" title="Not in the predicted lineup">○</span>';
+    return '';
+  }
+  function luText(p) {
+    if (!D.lineups) return '';
+    const st = (D.lineups.matches.find((m) => m.home === teamOf(p).short || m.away === teamOf(p).short) || {}).status;
+    const base = p.lineup === 'xi' ? `in the ${st || 'predicted'} lineup` : p.lineup === 'bench' ? `not in the ${st || 'predicted'} lineup` : 'no predicted lineup yet';
+    const tag = p.inj_tag === 'SUS' ? ', suspended' : ['OUT', 'INJ'].includes(p.inj_tag) ? ', tagged out' : p.inj_tag ? ', tagged doubtful' : '';
+    return `${base}${tag} <span class="muted">(Rotowire, ${relTime(D.lineups.fetched)})</span>`;
   }
   function flag(p) {
     if (p.status === 'a') return '';
@@ -310,7 +326,7 @@
         const g = t.fixtures[i] || [];
         return `<td>${g.length ? g.map(fxChip).join('') : fxChip(null)}<span class="sub x">${num(p.xp_gw[i])}</span></td>`;
       }).join('');
-      return `<tr class="clickable${x.slot > 11 ? ' benchrow' : ''}" data-id="${p.id}"><td class="name">${esc(p.name)}${x.c ? ' <b>(C)</b>' : x.vc ? ' <span class="muted">(V)</span>' : ''} ${flag(p)}<span class="sub">${esc(t.short)} · ${POS[p.pos]}${x.slot > 11 ? ' · bench' : ''}</span></td><td class="x">${num(xpN(p, n))}</td>${cells}</tr>`;
+      return `<tr class="clickable${x.slot > 11 ? ' benchrow' : ''}" data-id="${p.id}"><td class="name">${luDot(p)}${esc(p.name)}${x.c ? ' <b>(C)</b>' : x.vc ? ' <span class="muted">(V)</span>' : ''} ${flag(p)}<span class="sub">${esc(t.short)} · ${POS[p.pos]}${x.slot > 11 ? ' · bench' : ''}</span></td><td class="x">${num(xpN(p, n))}</td>${cells}</tr>`;
     }).join('');
     $('#outlook').innerHTML = `<table class="data outlook"><thead><tr>${head.map((h) => `<th>${h}</th>`).join('')}</tr></thead><tbody>${body}</tbody></table>`;
     $('#outlook').querySelectorAll('tr[data-id]').forEach((tr) => tr.addEventListener('click', () => openPlayer(byId.get(Number(tr.dataset.id)))));
@@ -328,7 +344,7 @@
       ${isIn ? '<span class="pill">NEW</span>' : moved ? `<span class="pill move">${x.slot <= 11 ? '↑ XI' : '↓ bench'}</span>` : ''}
       <div class="n">${esc(p.name)}</div>
       <div class="t">${esc(t.short)} ${money(p.price)}</div>
-      <div>${nextFixtures(p, 1)[0]}</div>
+      <div>${luDot(p)}${nextFixtures(p, 1)[0]}</div>
       <div class="x">${num(p.xp1)} xP</div>
       <div class="small">${flag(p)}</div>`;
     c.addEventListener('click', () => {
@@ -487,7 +503,7 @@
     for (const p of rows.slice(0, limit)) {
       const tr = el('tr', 'clickable' + (mine.has(p.id) ? ' mine' : ''));
       tr.innerHTML = COLS.map((c) => {
-        if (c.k === 'name') return `<td class="name">${esc(p.name)} ${flag(p)}<span class="sub">${esc(teamOf(p).short)} · ${POS[p.pos]}</span></td>`;
+        if (c.k === 'name') return `<td class="name">${luDot(p)}${esc(p.name)} ${flag(p)}<span class="sub">${esc(teamOf(p).short)} · ${POS[p.pos]}</span></td>`;
         if (c.gw != null) { const g = teamOf(p).fixtures[c.gw] || []; return `<td>${g.length ? g.map(fxChip).join('') : fxChip(null)}<span class="sub x">${num(p.xp_gw[c.gw])}</span></td>`; }
         return `<td class="${c.x ? 'x' : ''}">${c.f ? c.f(p[c.k]) : num(colVal(c, p))}</td>`;
       }).join('');
@@ -565,6 +581,7 @@
       <div class="kv">
         <span class="k">Next GW xP</span><span><b>${num(p.xp1)}</b> (FPL's own ep ${num(p.ep_next)})</span>
         <span class="k">Next 5 xP</span><span><b>${num(p.xp5)}</b></span>
+        <span class="k">Lineup</span><span>${luDot(p)} ${luText(p) || '<span class="muted">no lineup data</span>'}</span>
         <span class="k">Minutes</span><span>${Math.round(p.p_play * 100)}% to play, ${Math.round((p.p_60 ?? p.p_play) * 100)}% for 60+, ${p.xmin != null ? p.xmin + ' expected' : ''}${p.chance != null ? ' · FPL flag ' + p.chance + '%' : ''}${p.recent && p.recent.length ? '<br><span class="muted">last ' + p.recent.length + ': ' + p.recent.join(', ') + ' min</span>' : ''}</span>
         <span class="k">Season</span><span>${p.pts} pts · ${p.min} min · ${p.g}G ${p.a}A ${p.cs}CS · ${p.bonus} bonus</span>
         <span class="k">Per 90 (raw)</span><span>xGI ${num(p.xgi90, 2)} · xGC ${num(p.xgc90, 2)} · DC ${num(p.dc90)}${p.pos === 1 ? ' · saves ' + num(p.saves90) : ''}</span>
