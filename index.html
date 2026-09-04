@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="theme-color" content="#0f172a">
   <title>FPL Picker</title>
-  <link rel="stylesheet" href="styles.css?v=2">
+  <link rel="stylesheet" href="styles.css?v=3">
 </head>
 <body>
   <header class="top">
@@ -53,7 +53,12 @@
           <div id="bestxi"></div>
         </div>
         <div class="card">
-          <div class="card-head"><h2>Transfer ideas</h2><span class="muted">one-for-one, within budget, next 5 GWs</span></div>
+          <div class="card-head"><h2>xP outlook</h2><span class="muted" id="outlook-note"></span></div>
+          <div class="seg" id="f-xh-team" style="margin-bottom:8px"></div>
+          <div id="outlook" class="tablewrap"></div>
+        </div>
+        <div class="card">
+          <div class="card-head"><h2>Transfer ideas</h2><span class="muted" id="transfers-note">one-for-one, within budget, next 5 GWs</span></div>
           <div id="transfers"></div>
         </div>
         <div class="card">
@@ -67,6 +72,12 @@
     <section id="view-players" class="view hidden">
       <div class="filters">
         <input id="f-search" type="search" placeholder="Search player" autocomplete="off">
+        <div class="seg" id="f-xh" title="Expected points horizon">
+          <button data-n="1">1 GW</button>
+          <button data-n="3">3 GWs</button>
+          <button data-n="5" class="active">5 GWs</button>
+          <button data-n="8">8 GWs</button>
+        </div>
         <div class="seg" id="f-pos">
           <button data-pos="0" class="active">All</button>
           <button data-pos="1">GKP</button>
@@ -121,6 +132,6 @@
     </div>
   </div>
 
-  <script src="app.js?v=3"></script>
+  <script src="app.js?v=4"></script>
 </body>
 </html>

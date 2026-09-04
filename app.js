@@ -13,10 +13,13 @@
   const money = (v) => '£' + Number(v).toFixed(1) + 'm';
   const commas = (v) => (v == null ? '-' : Number(v).toLocaleString('en-GB'));
   const fit = (p) => p.status === 'a' || (p.chance != null && p.chance >= 75);
+  // Expected points over the next n gameweeks (the bundle carries 8 per player).
+  const xpN = (p, n) => (p.xp_gw || []).slice(0, n).reduce((a, b) => a + b, 0);
+  const xh = () => S.xh;
 
   let D = null;
   let byId = new Map();
-  const defaults = { view: 'team', pos: 0, team: 0, price: '', avail: true, mine: false, search: '', sort: 'xp5', dir: -1, horizon: 5 };
+  const defaults = { view: 'team', pos: 0, team: 0, price: '', avail: true, mine: false, search: '', sort: 'xpn', dir: -1, horizon: 5, xh: 5 };
   let S = { ...defaults };
   try { S = { ...defaults, ...JSON.parse(localStorage.getItem('fplpicker') || '{}') }; } catch (e) { /* fresh */ }
   const persist = () => { try { localStorage.setItem('fplpicker', JSON.stringify(S)); } catch (e) { /* ignore */ } };
@@ -54,7 +57,7 @@
   function candidates(outP) {
     const ids = squadIds(), clubs = clubCount(outP.id), budget = bank() + outP.price;
     return D.players.filter((q) => q.pos === outP.pos && !ids.has(q.id) && q.price <= budget + 1e-9 && (clubs[q.team] || 0) < 3)
-      .sort((a, c) => c.xp5 - a.xp5);
+      .sort((a, c) => xpN(c, xh()) - xpN(a, xh()));
   }
   function applyTransfer(outId, inId) {
     startPlan();
@@ -240,8 +243,29 @@
 
     renderChips(me);
     renderBestXI(list);
+    renderOutlook(list);
     renderTransfers(list);
     renderHistory(me);
+  }
+  // Per-gameweek xP for the squad over the chosen horizon.
+  function renderOutlook(list) {
+    const n = xh();
+    $('#outlook-note').textContent = `next ${n} GW${n === 1 ? '' : 's'}`;
+    const seg = $('#f-xh-team');
+    seg.innerHTML = [1, 3, 5, 8].map((k) => `<button data-n="${k}" class="${k === n ? 'active' : ''}">${k} GW${k === 1 ? '' : 's'}</button>`).join('');
+    seg.querySelectorAll('button').forEach((b) => b.addEventListener('click', () => { S.xh = Number(b.dataset.n); persist(); renderTeam(); renderPlayers(); }));
+    const rows = [...list].sort((a, c) => xpN(c.p, n) - xpN(a.p, n));
+    const head = ['Player', 'xP' + n].concat(Array.from({ length: n }, (_, i) => 'GW' + (D.next_gw + i)));
+    const body = rows.map((x) => {
+      const p = x.p, t = teamOf(p);
+      const cells = Array.from({ length: n }, (_, i) => {
+        const g = t.fixtures[i] || [];
+        return `<td>${g.length ? g.map(fxChip).join('') : fxChip(null)}<span class="sub x">${num(p.xp_gw[i])}</span></td>`;
+      }).join('');
+      return `<tr class="clickable${x.slot > 11 ? ' benchrow' : ''}" data-id="${p.id}"><td class="name">${esc(p.name)}${x.c ? ' <b>(C)</b>' : x.vc ? ' <span class="muted">(V)</span>' : ''} ${flag(p)}<span class="sub">${esc(t.short)} · ${POS[p.pos]}${x.slot > 11 ? ' · bench' : ''}</span></td><td class="x">${num(xpN(p, n))}</td>${cells}</tr>`;
+    }).join('');
+    $('#outlook').innerHTML = `<table class="data outlook"><thead><tr>${head.map((h) => `<th>${h}</th>`).join('')}</tr></thead><tbody>${body}</tbody></table>`;
+    $('#outlook').querySelectorAll('tr[data-id]').forEach((tr) => tr.addEventListener('click', () => openPlayer(byId.get(Number(tr.dataset.id)))));
   }
   function renderPlanBar() {
     const bar = $('#planbar'); bar.innerHTML = '';
@@ -271,7 +295,7 @@
     const sw = $('#plan-swaps');
     for (const s of P.swaps) {
       const o = byId.get(s.out), i = byId.get(s.in);
-      const item = el('div', 'item', `<div class="l">${esc(o.name)} <span class="muted">${money(o.price)}</span><span class="arrow">→</span><b>${esc(i.name)}</b> <span class="muted">${esc(teamOf(i).short)} ${money(i.price)}</span></div><div class="r"><span class="${i.xp5 - o.xp5 >= 0 ? 'good' : 'bad'}">${i.xp5 - o.xp5 >= 0 ? '+' : ''}${num(i.xp5 - o.xp5)} xP5</span> <button class="btn small" data-undo="${i.id}">Undo</button></div>`);
+      const item = el('div', 'item', `<div class="l">${esc(o.name)} <span class="muted">${money(o.price)}</span><span class="arrow">→</span><b>${esc(i.name)}</b> <span class="muted">${esc(teamOf(i).short)} ${money(i.price)}</span></div><div class="r"><span class="${xpN(i, xh()) - xpN(o, xh()) >= 0 ? 'good' : 'bad'}">${xpN(i, xh()) - xpN(o, xh()) >= 0 ? '+' : ''}${num(xpN(i, xh()) - xpN(o, xh()))} xP${xh()}</span> <button class="btn small" data-undo="${i.id}">Undo</button></div>`);
       item.querySelector('button').addEventListener('click', (e) => { e.stopPropagation(); undoTransfer(i.id); });
       sw.appendChild(item);
     }
@@ -364,7 +388,7 @@
     for (const x of list) {
       for (const q of candidates(x.p)) {
         if (!fit(q)) continue;
-        const delta = q.xp5 - x.p.xp5;
+        const delta = xpN(q, xh()) - xpN(x.p, xh());
         if (delta > 1) ideas.push({ out: x.p, in: q, delta, bank: bank() + x.p.price - q.price });
       }
     }
@@ -375,10 +399,11 @@
       seenOut.add(i.out.id); seenIn.add(i.in.id); top.push(i);
       if (top.length === 8) break;
     }
-    if (!top.length) { box.innerHTML = '<p class="muted small">No one-for-one swap gains more than 1 xP over five gameweeks.</p>'; return; }
+    $('#transfers-note').textContent = `one-for-one, within budget, next ${xh()} GW${xh() === 1 ? '' : 's'}`;
+    if (!top.length) { box.innerHTML = `<p class="muted small">No one-for-one swap gains more than 1 xP over the next ${xh()} gameweek${xh() === 1 ? '' : 's'}.</p>`; return; }
     const ul = el('div', 'list');
     for (const i of top) {
-      const it = el('div', 'item', `<div class="l"><span class="muted">${POS[i.out.pos]}</span> ${esc(i.out.name)} <span class="muted">${num(i.out.xp5)}</span><span class="arrow">→</span><b>${esc(i.in.name)}</b> <span class="muted">${esc(teamOf(i.in).short)} ${money(i.in.price)}</span></div><div class="r"><span class="good">+${num(i.delta)} xP</span><br><span class="muted small">bank ${money(i.bank)}</span> <button class="btn small">Add</button></div>`);
+      const it = el('div', 'item', `<div class="l"><span class="muted">${POS[i.out.pos]}</span> ${esc(i.out.name)} <span class="muted">${num(xpN(i.out, xh()))}</span><span class="arrow">→</span><b>${esc(i.in.name)}</b> <span class="muted">${esc(teamOf(i.in).short)} ${money(i.in.price)}</span></div><div class="r"><span class="good">+${num(i.delta)} xP</span><br><span class="muted small">bank ${money(i.bank)}</span> <button class="btn small">Add</button></div>`);
       it.querySelector('button').addEventListener('click', (e) => { e.stopPropagation(); applyTransfer(i.out.id, i.in.id); });
       it.addEventListener('click', () => openPlayer(i.in));
       ul.appendChild(it);
@@ -397,13 +422,22 @@
   }
 
   // ---------- players ----------
-  const COLS = [
+  const BASE_COLS = [
     { k: 'name', l: 'Player', str: true }, { k: 'price', l: '£', f: (v) => num(v, 1) }, { k: 'sel', l: 'Sel%', f: (v) => num(v, 1) },
     { k: 'form', l: 'Form' }, { k: 'pts', l: 'Pts', f: (v) => v }, { k: 'min', l: 'Min', f: (v) => v },
     { k: 'xg', l: 'xG' }, { k: 'xa', l: 'xA' }, { k: 'xgi90', l: 'xGI/90', f: (v) => num(v, 2) }, { k: 'dc90', l: 'DC/90' },
-    { k: 'ep_next', l: 'FPL ep' }, { k: 'xp1', l: 'xP1', x: true }, { k: 'xp5', l: 'xP5', x: true }, { k: 'fx', l: 'Next 5', str: true, nosort: true },
+    { k: 'ep_next', l: 'FPL ep' },
   ];
+  let COLS = [];
+  function buildCols() {
+    const n = xh();
+    COLS = [...BASE_COLS, { k: 'xpn', l: 'xP' + n, x: true, v: (p) => xpN(p, n) }];
+    for (let i = 0; i < n; i++) COLS.push({ k: 'gw' + i, l: 'GW' + (D.next_gw + i), gw: i, v: (p) => p.xp_gw[i] || 0 });
+  }
+  const colVal = (c, p) => (c.v ? c.v(p) : p[c.k]);
   function renderPlayers() {
+    buildCols();
+    document.querySelectorAll('#f-xh button').forEach((b) => b.classList.toggle('active', Number(b.dataset.n) === S.xh));
     const sel = $('#f-team');
     if (sel.options.length === 1) Object.values(D.teams).sort((a, c) => a.name.localeCompare(c.name)).forEach((t) => sel.appendChild(new Option(t.name, t.id)));
     sel.value = S.team; $('#f-price').value = S.price; $('#f-avail').checked = S.avail; $('#f-mine').checked = S.mine; $('#f-search').value = S.search;
@@ -420,15 +454,16 @@
     const rows = D.players.filter((p) => (!S.pos || p.pos === S.pos) && (!S.team || p.team === Number(S.team))
       && (!S.price || p.price <= Number(S.price)) && (!S.avail || fit(p))
       && (!S.mine || !mine.has(p.id)) && (!q || p.name.toLowerCase().includes(q) || p.full.toLowerCase().includes(q)));
-    rows.sort((a, c) => { const k = S.sort; return (a[k] > c[k] ? 1 : a[k] < c[k] ? -1 : 0) * S.dir; });
+    const sc = COLS.find((c) => c.k === S.sort) || COLS.find((c) => c.k === 'xpn');
+    rows.sort((a, c) => { const x = colVal(sc, a), y = colVal(sc, c); return (x > y ? 1 : x < y ? -1 : 0) * S.dir; });
     const limit = 200;
     const tb = $('#players-table tbody'); tb.innerHTML = '';
     for (const p of rows.slice(0, limit)) {
       const tr = el('tr', 'clickable' + (mine.has(p.id) ? ' mine' : ''));
       tr.innerHTML = COLS.map((c) => {
         if (c.k === 'name') return `<td class="name">${esc(p.name)} ${flag(p)}<span class="sub">${esc(teamOf(p).short)} · ${POS[p.pos]}</span></td>`;
-        if (c.k === 'fx') return `<td>${nextFixtures(p, 5).join(' ')}</td>`;
-        return `<td class="${c.x ? 'x' : ''}">${c.f ? c.f(p[c.k]) : num(p[c.k])}</td>`;
+        if (c.gw != null) { const g = teamOf(p).fixtures[c.gw] || []; return `<td>${g.length ? g.map(fxChip).join('') : fxChip(null)}<span class="sub x">${num(p.xp_gw[c.gw])}</span></td>`; }
+        return `<td class="${c.x ? 'x' : ''}">${c.f ? c.f(p[c.k]) : num(colVal(c, p))}</td>`;
       }).join('');
       tr.addEventListener('click', () => openPlayer(p));
       tb.appendChild(tr);
@@ -441,6 +476,11 @@
   $('#f-avail').addEventListener('change', (e) => { S.avail = e.target.checked; persist(); renderPlayers(); });
   $('#f-mine').addEventListener('change', (e) => { S.mine = e.target.checked; persist(); renderPlayers(); });
   document.querySelectorAll('#f-pos button').forEach((b) => b.addEventListener('click', () => { S.pos = Number(b.dataset.pos); persist(); renderPlayers(); }));
+  document.querySelectorAll('#f-xh button').forEach((b) => b.addEventListener('click', () => {
+    S.xh = Number(b.dataset.n);
+    if (/^gw\d+$/.test(S.sort) && Number(S.sort.slice(2)) >= S.xh) S.sort = 'xpn';
+    persist(); renderPlayers(); if (D.me && D.me.picks.length) renderTeam();
+  }));
 
   // ---------- fixtures ----------
   function renderFixtures() {
@@ -524,7 +564,7 @@
     const budget = bank() + outP.price;
     const render = (q) => {
       const rows = list.filter((c) => !q || c.name.toLowerCase().includes(q) || c.full.toLowerCase().includes(q)).slice(0, 60);
-      return rows.map((c) => `<div class="item clickable" data-in="${c.id}"><div class="l"><b>${esc(c.name)}</b> ${flag(c)} <span class="muted">${esc(teamOf(c).short)} ${money(c.price)}</span><br><span class="small">${nextFixtures(c, 3).join(' ')}</span></div><div class="r"><span class="x">${num(c.xp5)} xP5</span><br><span class="small ${c.xp5 - outP.xp5 >= 0 ? 'good' : 'bad'}">${c.xp5 - outP.xp5 >= 0 ? '+' : ''}${num(c.xp5 - outP.xp5)}</span></div></div>`).join('') || '<p class="muted small">No affordable players match.</p>';
+      return rows.map((c) => `<div class="item clickable" data-in="${c.id}"><div class="l"><b>${esc(c.name)}</b> ${flag(c)} <span class="muted">${esc(teamOf(c).short)} ${money(c.price)}</span><br><span class="small">${nextFixtures(c, 3).join(' ')}</span></div><div class="r"><span class="x">${num(xpN(c, xh()))} xP${xh()}</span><br><span class="small ${xpN(c, xh()) - xpN(outP, xh()) >= 0 ? 'good' : 'bad'}">${xpN(c, xh()) - xpN(outP, xh()) >= 0 ? '+' : ''}${num(xpN(c, xh()) - xpN(outP, xh()))}</span></div></div>`).join('') || '<p class="muted small">No affordable players match.</p>';
     };
     openModal(`<h2>Replace ${esc(outP.name)} <span class="muted">${POS[outP.pos]} · up to ${money(budget)}</span></h2>
       <input id="pick-search" type="search" placeholder="Search" autocomplete="off" style="width:100%;margin:8px 0">
@@ -543,7 +583,7 @@
       return { x, b, ok: b >= -1e-9 && clubOk, why: !clubOk ? 'already 3 from ' + teamOf(inP).short : b < 0 ? 'over budget' : '' };
     });
     openModal(`<h2>Bring in ${esc(inP.name)} <span class="muted">${esc(teamOf(inP).short)} ${money(inP.price)}</span></h2><p class="muted small">Who goes out?</p>
-      <div class="list">${own.map((o) => `<div class="item ${o.ok ? 'clickable' : 'disabled'}" data-out="${o.x.id}"><div class="l"><b>${esc(o.x.p.name)}</b> <span class="muted">${money(o.x.p.price)} · ${num(o.x.p.xp5)} xP5</span></div><div class="r">${o.ok ? `<span class="${inP.xp5 - o.x.p.xp5 >= 0 ? 'good' : 'bad'}">${inP.xp5 - o.x.p.xp5 >= 0 ? '+' : ''}${num(inP.xp5 - o.x.p.xp5)} xP5</span><br><span class="muted small">bank ${money(o.b)}</span>` : `<span class="muted small">${o.why}</span>`}</div></div>`).join('')}</div>`);
+      <div class="list">${own.map((o) => `<div class="item ${o.ok ? 'clickable' : 'disabled'}" data-out="${o.x.id}"><div class="l"><b>${esc(o.x.p.name)}</b> <span class="muted">${money(o.x.p.price)} · ${num(xpN(o.x.p, xh()))} xP${xh()}</span></div><div class="r">${o.ok ? `<span class="${xpN(inP, xh()) - xpN(o.x.p, xh()) >= 0 ? 'good' : 'bad'}">${xpN(inP, xh()) - xpN(o.x.p, xh()) >= 0 ? '+' : ''}${num(xpN(inP, xh()) - xpN(o.x.p, xh()))} xP${xh()}</span><br><span class="muted small">bank ${money(o.b)}</span>` : `<span class="muted small">${o.why}</span>`}</div></div>`).join('')}</div>`);
     $('#modal-content').querySelectorAll('.item.clickable').forEach((r) => r.addEventListener('click', () => { applyTransfer(Number(r.dataset.out), inP.id); closeModal(); showView('team'); }));
   }
   $('#modal-close').addEventListener('click', closeModal);
