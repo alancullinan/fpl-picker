@@ -37,7 +37,7 @@ PARAMS = {
     # Recent-minutes model (used when a player's fixture history is available)
     "minutes_model": 1,       # 1 = recency-weighted fixture history, 0 = season totals
     "min_decay": 0.75,        # weight of each older fixture relative to the next newer one
-    "min_prior_w": 2.0,       # prior start rate counts as this many fixtures (backtested: 1-3 close, 2 best XI)
+    "min_prior_w": 0.5,       # prior start rate counts as this many fixtures (backtested: best rank corr, full and early season)
     "p60_sub": 0.05,          # chance a substitute appearance reaches 60 minutes
     "mins_sub": 20.0,         # default minutes for a substitute appearance
     "mins_start": 85.0,       # default minutes for a start

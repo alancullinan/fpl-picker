@@ -103,7 +103,8 @@ Doubles add, blanks give 0.
 
 Minutes: each player's recent fixtures (most recent weighted 1, each older one ×0.75) give a
 start probability, a substitute-appearance probability, typical minutes for each, and the
-chance of reaching 60. A prior start rate from last season counts as two fixtures. Per-90
+chance of reaching 60. A prior start rate from last season counts as half a fixture, so two
+starts already outweigh a backup role last year. Per-90
 rates scale by expected minutes, so a habitual 20-minute substitute is valued as such.
 FPL's availability flag multiplies everything. The bundle exposes `p_play`, `p_60`, `xmin`
 (expected minutes) and `recent` (last six fixtures' minutes) per player.
@@ -117,7 +118,9 @@ The model is `pipeline/model.py`; `pipeline/backtest.py` is the gate. Run it bef
 any change (`--set key=value` tries a parameter without editing code) and keep a change only
 if rank correlation and best-XI points improve over 2025/26. History: season-totals minutes
 gave rank correlation 0.48 and best-XI 52.7 points per gameweek; the recent-fixtures minutes
-model gives 0.57 and 56.5. Points-per-game form scores 0.38 and 40.8. Expert or crowd signals
+model gives 0.59 and 54.3 (a heavier prior scored 0.57 and 56.5 but starved players whose
+role changed over the summer; check `--last 8` for early-season behaviour as well as the full
+season). Points-per-game form scores 0.38 and 40.8. Expert or crowd signals
 go through the same gate before they touch xP.
 
 ## What the API can and cannot show
