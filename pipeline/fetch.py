@@ -134,7 +134,11 @@ def main():
         print(f"entry {args.entry} not found (private or wrong id); skipping team data", file=sys.stderr)
         return
     save(args.out, "entry.json", entry)
-    save(args.out, "entry-history.json", get(f"entry/{args.entry}/history"))
+    history = get(f"entry/{args.entry}/history")
+    if history is not None and not history.get("current") and any(e.get("finished") for e in bootstrap.get("events", [])):
+        time.sleep(3)  # the endpoint sometimes returns no rows mid-season; try once more
+        history = get(f"entry/{args.entry}/history") or history
+    save(args.out, "entry-history.json", history)
     save(args.out, "entry-transfers.json", get(f"entry/{args.entry}/transfers"))
 
     # Picks exist only for gameweeks whose deadline has passed. Prefer the

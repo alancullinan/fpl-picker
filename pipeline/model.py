@@ -48,6 +48,7 @@ PARAMS = {
     "lineup_w_confirmed": 0.95,
     "lineup_out": 0.25,       # availability cap for a player Rotowire tags OUT
     "lineup_ques": 0.75,      # availability cap for a player Rotowire tags QUES
+    "tag_fade": 0.5,          # how much of an OUT tag's effect remains each further gameweek
 }
 
 
@@ -84,24 +85,30 @@ def rates(state, prior, P=PARAMS):
     }
 
 
-def minutes_probs(state, P=PARAMS):
-    """(p_play, p_60, expected minutes / 90) for the next fixture.
+def minutes_probs(state, P=PARAMS, ahead=0):
+    """(p_play, p_60, expected minutes / 90) for a fixture `ahead` gameweeks away.
 
     With a fixture history (state["recent"], most recent first, as (minutes,
     started) pairs) the estimate is recency-weighted and separates starts from
     substitute appearances. Without one it falls back to season totals.
+
+    A predicted lineup speaks only about the next fixture (ahead == 0). An
+    OUT tag fades by tag_fade per further gameweek; a QUES tag is next-fixture
+    only. FPL's own availability flag is applied throughout.
     """
     chance = state.get("chance", 1.0)
     if state.get("status") in ("u", "n"):
         chance = 0.0
     tag = state.get("inj_tag")
     if tag in ("OUT", "SUS", "INJ"):
-        chance = min(chance, P["lineup_out"])
-    elif tag in ("QUES", "DOUB", "GTD"):
+        cap = 1.0 - (1.0 - P["lineup_out"]) * (P["tag_fade"] ** ahead)
+        chance = min(chance, cap)
+    elif tag in ("QUES", "DOUB", "GTD") and ahead == 0:
         chance = min(chance, P["lineup_ques"])
     recent = state.get("recent")
     if P["minutes_model"] >= 1 and recent:
-        return _recent_minutes(recent, state.get("prior_start", P["unseen_start"]), chance, P, state.get("lineup"), state.get("lineup_confirmed", False))
+        lineup = state.get("lineup") if ahead == 0 else None
+        return _recent_minutes(recent, state.get("prior_start", P["unseen_start"]), chance, P, lineup, state.get("lineup_confirmed", False))
     mins, games = state["mins"], max(state["team_games"], 1)
     if mins > 0:
         start_rate = min(1.0, state["starts"] / games)
@@ -190,9 +197,10 @@ def player_xp(state, prior, fixtures_by_gw, lam_team, P=PARAMS):
     p_play, p_60, frac = minutes_probs(state, P)
     totals, parts1 = [], {}
     for i, fxs in enumerate(fixtures_by_gw):
+        pp, p6, fr = (p_play, p_60, frac) if i == 0 else minutes_probs(state, P, ahead=i)
         total = 0.0
         for fx in fxs:
-            parts = fixture_xp(state["pos"], r, p_play, p_60, lam_team, fx, P, frac)
+            parts = fixture_xp(state["pos"], r, pp, p6, lam_team, fx, P, fr)
             total += sum(parts.values())
             if i == 0:
                 for k, v in parts.items():

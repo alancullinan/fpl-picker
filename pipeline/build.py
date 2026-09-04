@@ -99,7 +99,7 @@ def build(raw, out):
         team_xgc[tid] = model.team_xgc(gks, P)
 
     prev = load_prev(raw)
-    history = load(raw, "element-history.json") or {}
+    fixture_hist = load(raw, "element-history.json") or {}
     lineups = load(raw, "lineups.json") or {}
     short_to_id = {t["short_name"]: tid for tid, t in teams.items()}
     lineup_of, inj_tag, team_has_lineup, lineup_status = {}, {}, {}, {}
@@ -136,7 +136,7 @@ def build(raw, out):
             "dc": fnum(p.get("defensive_contribution")), "saves": fnum(p.get("saves")), "bonus": fnum(p.get("bonus")),
         }
         # Most recent fixture first, as (minutes, started), for the minutes model.
-        rows = history.get(str(p["id"])) or []
+        rows = fixture_hist.get(str(p["id"])) or []
         state["recent"] = [(r[1], bool(r[2])) for r in reversed(rows)][:12]
         lineup = lineup_of.get(p["id"]) or ("bench" if team_has_lineup.get(p["team"]) else None)
         state["lineup"] = lineup
@@ -223,6 +223,31 @@ def build(raw, out):
             "stop": c.get("stop_event"),
         })
 
+    # The history endpoint occasionally returns no gameweek rows mid-season.
+    # Rather than replay nothing and guess, reuse the previous bundle's entry data.
+    prev_bundle = None
+    if os.path.exists(out):
+        try:
+            with open(out, encoding="utf-8") as f:
+                prev_bundle = json.load(f)
+        except (OSError, ValueError):
+            prev_bundle = None
+    season_started = current is not None
+    if season_started and history is not None and not history.get("current"):
+        pm = (prev_bundle or {}).get("me") or {}
+        if pm.get("history"):
+            print("entry history came back empty; carrying forward the previous bundle's history", file=sys.stderr)
+            history = {"current": [{"event": h["gw"], "points": h["pts"], "overall_rank": h.get("rank"),
+                                    "bank": int(round(h["bank"] * 10)), "value": int(round(h["value"] * 10)),
+                                    "event_transfers": h["transfers"], "event_transfers_cost": h["hit"],
+                                    "points_on_bench": h["bench"]} for h in pm["history"]],
+                       "chips": [{"name": c["name"], "event": c["gw"]} for c in pm.get("chips_used", [])]}
+            if not transfers and pm.get("transfers"):
+                transfers = [{"event": t["gw"], "element_in": t["in"], "element_out": t["out"],
+                              "element_in_cost": int(round(t["in_cost"] * 10)), "element_out_cost": int(round(t["out_cost"] * 10)),
+                              "time": ""} for t in pm["transfers"]]
+        else:
+            history = None
     my = None
     if entry:
         my = {
@@ -319,6 +344,8 @@ def free_transfers(history):
     """
     chips = {c["event"]: c["name"] for c in history.get("chips", [])}
     rows = sorted(history.get("current", []), key=lambda r: r["event"])
+    if not rows:
+        return None  # nothing to replay; the site shows "?" rather than a guess
     ft = 1
     for r in rows:
         gw = r["event"]
