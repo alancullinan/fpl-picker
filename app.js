@@ -565,7 +565,7 @@
       <div class="kv">
         <span class="k">Next GW xP</span><span><b>${num(p.xp1)}</b> (FPL's own ep ${num(p.ep_next)})</span>
         <span class="k">Next 5 xP</span><span><b>${num(p.xp5)}</b></span>
-        <span class="k">Chance of playing</span><span>${Math.round(p.p_play * 100)}%${p.chance != null ? ' (FPL flag ' + p.chance + '%)' : ''}</span>
+        <span class="k">Minutes</span><span>${Math.round(p.p_play * 100)}% to play, ${Math.round((p.p_60 ?? p.p_play) * 100)}% for 60+, ${p.xmin != null ? p.xmin + ' expected' : ''}${p.chance != null ? ' · FPL flag ' + p.chance + '%' : ''}${p.recent && p.recent.length ? '<br><span class="muted">last ' + p.recent.length + ': ' + p.recent.join(', ') + ' min</span>' : ''}</span>
         <span class="k">Season</span><span>${p.pts} pts · ${p.min} min · ${p.g}G ${p.a}A ${p.cs}CS · ${p.bonus} bonus</span>
         <span class="k">Per 90 (raw)</span><span>xGI ${num(p.xgi90, 2)} · xGC ${num(p.xgc90, 2)} · DC ${num(p.dc90)}${p.pos === 1 ? ' · saves ' + num(p.saves90) : ''}</span>
         <span class="k">Per 90 (model)</span><span>xG ${num(p.rates.xg90, 2)} · xA ${num(p.rates.xa90, 2)} · DC ${num(p.rates.dc90)} · bonus/g ${num(p.rates.bon, 2)} <span class="muted">(prior: ${p.rates.src === 'prev' ? 'last season' : 'price'})</span></span>
