@@ -19,7 +19,7 @@
 
   let D = null;
   let byId = new Map();
-  const defaults = { view: 'team', pos: 0, team: 0, price: '', avail: true, mine: false, search: '', sort: 'xpn', dir: -1, horizon: 5, xh: 5 };
+  const defaults = { view: 'team', pos: 0, team: 0, price: '', avail: true, mine: false, search: '', sort: 'xpn', dir: -1, horizon: 5, xh: 5, teamView: 'plan' };
   let S = { ...defaults };
   try { S = { ...defaults, ...JSON.parse(localStorage.getItem('fplpicker') || '{}') }; } catch (e) { /* fresh */ }
   const persist = () => { try { localStorage.setItem('fplpicker', JSON.stringify(S)); } catch (e) { /* ignore */ } };
@@ -112,7 +112,7 @@
     savePlan(); renderTeam();
   }
   function autoXI() {
-    startPlan();
+    startPlan(); S.teamView = 'plan'; persist();
     const best = bestXI(picks());
     if (!best) return;
     const ids = new Set(best.xi.map((x) => x.id));
@@ -220,7 +220,17 @@
     if (!me || !me.picks || !me.picks.length) { $('#team-empty').classList.remove('hidden'); return; }
     $('#team-content').classList.remove('hidden');
     $('#team-name').textContent = me.team_name || 'My team';
-    $('#team-gw').textContent = P ? `Planning GW${D.next_gw} from the confirmed GW${me.picks_gw} squad` : `Confirmed squad from GW${me.picks_gw}${me.active_chip ? ' · ' + (CHIP_NAME[me.active_chip] || me.active_chip) + ' active' : ''}`;
+    const showPlan = P && S.teamView === 'plan';
+
+    // Which squad the card shows: the confirmed one from FPL, or the plan.
+    const tog = $('#team-toggle'); tog.innerHTML = '';
+    if (P) {
+      tog.innerHTML = `<div class="seg"><button data-tv="confirmed" class="${showPlan ? '' : 'active'}">GW${me.picks_gw} confirmed</button><button data-tv="plan" class="${showPlan ? 'active' : ''}">GW${D.next_gw} plan</button></div>`;
+      tog.querySelectorAll('button').forEach((b) => b.addEventListener('click', () => { S.teamView = b.dataset.tv; persist(); renderTeam(); }));
+      $('#team-gw').textContent = showPlan ? `Your planned squad for GW${D.next_gw}. Confirm the moves in the FPL app before the deadline.` : `As confirmed by FPL for GW${me.picks_gw}${me.active_chip ? ' · ' + (CHIP_NAME[me.active_chip] || me.active_chip) + ' active' : ''}. Your plan is under "GW${D.next_gw} plan".`;
+    } else {
+      $('#team-gw').textContent = `As confirmed by FPL for GW${me.picks_gw}${me.active_chip ? ' · ' + (CHIP_NAME[me.active_chip] || me.active_chip) + ' active' : ''}. Changes made in the FPL app for GW${D.next_gw} appear after the deadline.`;
+    }
 
     const ft = me.free_transfers;
     let ftTile = ft ?? '?';
@@ -232,27 +242,30 @@
       else ftTile = `<span class="${used > ft ? 'bad' : ''}">${Math.max(0, ft - used)}</span><span class="sub2">of ${ft} left · ${used} used${h ? ` · <span class="bad">-${h} pts</span>` : ''}</span>`;
     }
     const stats = [
-      ['GW points', me.gw_points ?? '-'], ['Total', commas(me.overall_points)], ['Rank', commas(me.overall_rank)],
+      [`GW${me.picks_gw} points`, me.gw_points ?? '-'], ['Total', commas(me.overall_points)], ['Rank', commas(me.overall_rank)],
       ['Value', money(me.value)], [P ? 'Bank after plan' : 'Bank', `<span class="${bank() < 0 ? 'bad' : ''}">${money(bank())}</span>`], ['Free transfers', ftTile],
     ];
     $('#team-summary').innerHTML = stats.map(([k, v]) => `<div class="stat"><div class="k">${k}</div><div class="v">${v}</div></div>`).join('');
 
-    renderPlanBar();
-    const list = picks();
+    renderPlanBar(showPlan);
+    const list = showPlan || !P ? picks() : me.picks.map((pk) => ({ ...pk, p: byId.get(pk.id) })).filter((x) => x.p);
     const xi = list.filter((x) => x.slot <= 11), bench = list.filter((x) => x.slot > 11).sort((a, c) => a.slot - c.slot);
     const pitch = $('#pitch'); pitch.innerHTML = '';
+    pitch.classList.toggle('confirmed', !!P && !showPlan);
     for (const pos of [1, 2, 3, 4]) {
       const row = el('div', 'row');
-      xi.filter((x) => x.p.pos === pos).forEach((x) => row.appendChild(pcard(x)));
+      xi.filter((x) => x.p.pos === pos).forEach((x) => row.appendChild(pcard(x, showPlan)));
       pitch.appendChild(row);
     }
     const b = $('#bench'); b.innerHTML = '';
-    bench.forEach((x) => b.appendChild(pcard(x)));
+    bench.forEach((x) => b.appendChild(pcard(x, showPlan)));
 
+    // Everything below the card works on the plan when one exists.
+    const planned = picks();
     renderChips(me);
-    renderBestXI(list);
-    renderOutlook(list);
-    renderTransfers(list);
+    renderBestXI(planned);
+    renderOutlook(planned);
+    renderTransfers(planned);
     renderHistory(me);
   }
   // Per-gameweek xP for the squad over the chosen horizon.
@@ -275,29 +288,28 @@
     $('#outlook').innerHTML = `<table class="data outlook"><thead><tr>${head.map((h) => `<th>${h}</th>`).join('')}</tr></thead><tbody>${body}</tbody></table>`;
     $('#outlook').querySelectorAll('tr[data-id]').forEach((tr) => tr.addEventListener('click', () => openPlayer(byId.get(Number(tr.dataset.id)))));
   }
-  function renderPlanBar() {
+  function renderPlanBar(showPlan) {
     const bar = $('#planbar'); bar.innerHTML = '';
     if (!P) {
       bar.innerHTML = `<button class="btn primary" id="plan-start">Plan changes for GW${D.next_gw}</button><span class="muted small">Transfers, lineup, captain and chip, kept in this browser until the deadline.</span>`;
-      $('#plan-start').addEventListener('click', () => { startPlan(); renderTeam(); renderPlayers(); });
+      $('#plan-start').addEventListener('click', () => { startPlan(); S.teamView = 'plan'; persist(); renderTeam(); renderPlayers(); });
       return;
     }
+    if (!showPlan) return;
     const h = hit();
-    const chipOpts = ['<option value="">No chip</option>'].concat(availableChips().map((c) => `<option value="${c.name}" ${P.chip === c.name ? 'selected' : ''}>${CHIP_NAME[c.name]}</option>`)).join('');
     bar.innerHTML = `
       <div class="planrow">
         <span><b>${P.swaps.length}</b> transfer${P.swaps.length === 1 ? '' : 's'} ${h ? `<span class="bad">(-${h} hit)</span>` : '<span class="good">(free)</span>'}</span>
         <span>bank <b class="${bank() < 0 ? 'bad' : ''}">${money(bank())}</b></span>
         <span>xP <b>${num(planXP() - h)}</b></span>
-        <select id="plan-chip">${chipOpts}</select>
+        <span>chip <b>${P.chip ? CHIP_NAME[P.chip] : 'none'}</b></span>
       </div>
       <div class="planrow">
         <button class="btn" id="plan-auto">Auto-pick XI</button>
         <button class="btn" id="plan-reset">Discard plan</button>
-        <span class="muted small">${pendingSwap ? 'Tap another player to swap positions.' : 'Tap a player for actions.'}</span>
+        <span class="muted small">${pendingSwap ? 'Tap another player to swap positions.' : 'Tap a player for actions. Chips are chosen in the Chips card below.'}</span>
       </div>
       <div id="plan-swaps" class="list"></div>`;
-    $('#plan-chip').addEventListener('change', (e) => { P.chip = e.target.value || null; savePlan(); renderTeam(); });
     $('#plan-auto').addEventListener('click', autoXI);
     $('#plan-reset').addEventListener('click', () => { if (confirm('Discard the planned changes?')) resetPlan(); });
     const sw = $('#plan-swaps');
@@ -313,9 +325,9 @@
     const used = D.me.chips_used || [];
     return (D.chips || []).filter((c) => D.next_gw >= c.start && D.next_gw <= c.stop && !used.some((u) => u.name === c.name && u.gw >= c.start && u.gw <= c.stop));
   }
-  function pcard(x) {
+  function pcard(x, interactive = true) {
     const p = x.p, t = teamOf(p);
-    const planned = P && P.swaps.some((s) => s.in === p.id);
+    const planned = interactive && P && P.swaps.some((s) => s.in === p.id);
     const c = el('div', 'pcard flag-' + p.status + (planned ? ' planned' : '') + (pendingSwap === p.id ? ' selected' : ''));
     c.innerHTML = `${x.c ? '<span class="badge">C</span>' : x.vc ? '<span class="badge vc">V</span>' : ''}
       <div class="n">${esc(p.name)}</div>
@@ -324,6 +336,7 @@
       <div class="x">${num(p.xp1)} xP</div>
       <div class="small">${flag(p)}</div>`;
     c.addEventListener('click', () => {
+      if (!interactive) return openPlayer(p, null, true);
       if (pendingSwap && pendingSwap !== p.id) {
         const err = swapSlots(pendingSwap, p.id);
         pendingSwap = null;
@@ -337,6 +350,7 @@
   function renderChips(me) {
     const box = $('#chips'); box.innerHTML = '';
     const used = me.chips_used || [];
+    const avail = new Set(availableChips().map((c) => c.name));
     // Sets are grouped by the window's end: wildcard and free hit open at GW2
     // while the other chips open at GW1, but every chip in a set closes together.
     const stops = [...new Set((D.chips || []).map((c) => c.stop))].sort((a, c) => a - c);
@@ -345,13 +359,21 @@
       const set = stops.indexOf(c.stop) + 1;
       const u = used.find((x) => x.name === c.name && x.gw >= c.start && x.gw <= c.stop);
       const future = D.next_gw && D.next_gw < c.start;
-      const plannedNow = P && P.chip === c.name && D.next_gw >= c.start && D.next_gw <= c.stop;
-      const div = el('div', 'chip' + (u ? ' used' : future ? ' future' : '') + (plannedNow ? ' planned' : ''));
+      const current = D.next_gw >= c.start && D.next_gw <= c.stop;
+      const plannedNow = P && P.chip === c.name && current;
+      const tappable = current && avail.has(c.name);
+      const div = el('div', 'chip' + (u ? ' used' : future ? ' future' : '') + (plannedNow ? ' planned' : '') + (tappable ? ' tappable' : ''));
       div.innerHTML = `<div class="k">${CHIP_LABEL[c.name] || c.name}${set}</div><div class="small muted">${u ? 'GW' + u.gw : plannedNow ? 'planned GW' + D.next_gw : 'GW' + c.start + '–' + c.stop}</div>`;
       div.title = CHIP_NAME[c.name] || c.name;
+      if (tappable) div.addEventListener('click', () => {
+        startPlan();
+        P.chip = P.chip === c.name ? null : c.name;
+        S.teamView = 'plan'; savePlan(); persist(); renderTeam();
+      });
       box.appendChild(div);
     }
     if (!defs.length) box.innerHTML = '<span class="muted small">Chip definitions not in data.</span>';
+    $('#chips-note').textContent = P && P.chip ? `${CHIP_NAME[P.chip]} planned for GW${D.next_gw} · tap to clear` : `tap a chip to plan it for GW${D.next_gw}`;
   }
   function bestXI(list) {
     const by = { 1: [], 2: [], 3: [], 4: [] };
@@ -412,7 +434,7 @@
     const ul = el('div', 'list');
     for (const i of top) {
       const it = el('div', 'item', `<div class="l"><span class="muted">${POS[i.out.pos]}</span> ${esc(i.out.name)} <span class="muted">${num(xpN(i.out, xh()))}</span><span class="arrow">→</span><b>${esc(i.in.name)}</b> <span class="muted">${esc(teamOf(i.in).short)} ${money(i.in.price)}</span></div><div class="r"><span class="good">+${num(i.delta)} xP</span><br><span class="muted small">bank ${money(i.bank)}</span> <button class="btn small">Add</button></div>`);
-      it.querySelector('button').addEventListener('click', (e) => { e.stopPropagation(); applyTransfer(i.out.id, i.in.id); });
+      it.querySelector('button').addEventListener('click', (e) => { e.stopPropagation(); S.teamView = 'plan'; persist(); applyTransfer(i.out.id, i.in.id); });
       it.addEventListener('click', () => openPlayer(i.in));
       ul.appendChild(it);
     }
@@ -514,7 +536,7 @@
   // ---------- player sheet ----------
   function openModal(html) { $('#modal-content').innerHTML = html; $('#modal').classList.remove('hidden'); }
   function closeModal() { $('#modal').classList.add('hidden'); }
-  function openPlayer(p, pick) {
+  function openPlayer(p, pick, fromConfirmed) {
     const t = teamOf(p);
     const parts = p.parts || {};
     const total = Object.values(parts).reduce((s, v) => s + Math.max(v, 0), 0) || 1;
@@ -530,7 +552,7 @@
       if (inSquad) {
         const pk = pick || picks().find((x) => x.id === p.id);
         const planned = P && P.swaps.some((s) => s.in === p.id);
-        actions = `<div class="actions">
+        actions = `${fromConfirmed ? `<p class="muted small">Actions apply to your GW${D.next_gw} plan.</p>` : ''}<div class="actions">
           <button class="btn primary" data-act="out">Transfer out</button>
           ${pk.slot <= 11 ? `<button class="btn" data-act="cap">Captain</button><button class="btn" data-act="vc">Vice</button>` : ''}
           <button class="btn" data-act="swap">Swap position…</button>
@@ -559,6 +581,7 @@
       const act = b.dataset.act;
       if (act === 'out') return openPicker(p);
       if (act === 'in') return openOutChooser(p);
+      S.teamView = 'plan'; persist();
       if (act === 'cap') { setCaptain(p.id, false); closeModal(); showView('team'); return; }
       if (act === 'vc') { setCaptain(p.id, true); closeModal(); showView('team'); return; }
       if (act === 'swap') { startPlan(); pendingSwap = p.id; closeModal(); showView('team'); renderTeam(); return; }
@@ -577,7 +600,7 @@
     openModal(`<h2>Replace ${esc(outP.name)} <span class="muted">${POS[outP.pos]} · up to ${money(budget)}</span></h2>
       <input id="pick-search" type="search" placeholder="Search" autocomplete="off" style="width:100%;margin:8px 0">
       <div id="pick-list" class="list">${render('')}</div>`);
-    const bind = () => $('#pick-list').querySelectorAll('[data-in]').forEach((r) => r.addEventListener('click', () => { applyTransfer(outP.id, Number(r.dataset.in)); closeModal(); showView('team'); }));
+    const bind = () => $('#pick-list').querySelectorAll('[data-in]').forEach((r) => r.addEventListener('click', () => { S.teamView = 'plan'; persist(); applyTransfer(outP.id, Number(r.dataset.in)); closeModal(); showView('team'); }));
     bind();
     $('#pick-search').addEventListener('input', (e) => { $('#pick-list').innerHTML = render(e.target.value.trim().toLowerCase()); bind(); });
   }
@@ -592,7 +615,7 @@
     });
     openModal(`<h2>Bring in ${esc(inP.name)} <span class="muted">${esc(teamOf(inP).short)} ${money(inP.price)}</span></h2><p class="muted small">Who goes out?</p>
       <div class="list">${own.map((o) => `<div class="item ${o.ok ? 'clickable' : 'disabled'}" data-out="${o.x.id}"><div class="l"><b>${esc(o.x.p.name)}</b> <span class="muted">${money(o.x.p.price)} · ${num(xpN(o.x.p, xh()))} xP${xh()}</span></div><div class="r">${o.ok ? `<span class="${xpN(inP, xh()) - xpN(o.x.p, xh()) >= 0 ? 'good' : 'bad'}">${xpN(inP, xh()) - xpN(o.x.p, xh()) >= 0 ? '+' : ''}${num(xpN(inP, xh()) - xpN(o.x.p, xh()))} xP${xh()}</span><br><span class="muted small">bank ${money(o.b)}</span>` : `<span class="muted small">${o.why}</span>`}</div></div>`).join('')}</div>`);
-    $('#modal-content').querySelectorAll('.item.clickable').forEach((r) => r.addEventListener('click', () => { applyTransfer(Number(r.dataset.out), inP.id); closeModal(); showView('team'); }));
+    $('#modal-content').querySelectorAll('.item.clickable').forEach((r) => r.addEventListener('click', () => { S.teamView = 'plan'; persist(); applyTransfer(Number(r.dataset.out), inP.id); closeModal(); showView('team'); }));
   }
   $('#modal-close').addEventListener('click', closeModal);
   $('#modal').addEventListener('click', (e) => { if (e.target.id === 'modal') closeModal(); });

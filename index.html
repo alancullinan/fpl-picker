@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="theme-color" content="#0f172a">
   <title>FPL Picker</title>
-  <link rel="stylesheet" href="styles.css?v=4">
+  <link rel="stylesheet" href="styles.css?v=5">
 </head>
 <body>
   <header class="top">
@@ -38,14 +38,15 @@
         <div class="card">
           <div class="card-head">
             <h2 id="team-name"></h2>
-            <span id="team-gw" class="muted"></span>
+            <div id="team-toggle"></div>
           </div>
+          <p id="team-gw" class="muted small" style="margin:0 0 8px"></p>
           <div id="planbar" class="planbar"></div>
           <div id="pitch" class="pitch"></div>
           <div id="bench" class="bench"></div>
         </div>
         <div class="card">
-          <div class="card-head"><h2>Chips</h2><span class="muted">two sets, one per half</span></div>
+          <div class="card-head"><h2>Chips</h2><span class="muted small" id="chips-note"></span></div>
           <div id="chips" class="chips"></div>
         </div>
         <div class="card">
@@ -132,6 +133,6 @@
     </div>
   </div>
 
-  <script src="app.js?v=5"></script>
+  <script src="app.js?v=6"></script>
 </body>
 </html>

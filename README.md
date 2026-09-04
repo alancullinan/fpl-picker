@@ -33,7 +33,9 @@ The rules it encodes are written up in `.claude/skills/fpl/SKILL.md`.
 The public FPL API only publishes a squad after the gameweek deadline, so changes you make
 in the FPL app for the upcoming gameweek are invisible until then. Planning mode fills the
 gap: from the confirmed squad, tap players to transfer them out, bring players in from the
-Players tab, swap starters and bench, set captain and vice, and pick a chip. The plan is kept
+Players tab, swap starters and bench, set captain and vice, and tap a chip in the Chips card
+to plan it. A toggle on the team card switches between the confirmed squad and the plan, so
+the two are never mixed on screen. The plan is kept
 in the browser, checks budget, the three-per-club limit, formation and free transfers, and is
 cleared once FPL confirms a newer squad. It is a scratchpad; the transfers still have to be
 made in the FPL app.
