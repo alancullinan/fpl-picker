@@ -68,6 +68,7 @@ def build(raw, out):
     next_id = next_ev["id"] if next_ev else None
 
     # Games played per team this season (finished fixtures).
+    finished_gws = {e["id"] for e in events if e.get("finished")}
     played = {tid: 0 for tid in teams}
     for f in fixtures:
         if f.get("finished"):
@@ -141,7 +142,14 @@ def build(raw, out):
             "dc": fnum(p.get("defensive_contribution")), "saves": fnum(p.get("saves")), "bonus": fnum(p.get("bonus")),
         }
         # Most recent fixture first, as (minutes, started), for the minutes model.
-        rows = fixture_hist.get(str(p["id"])) or []
+        # Once a deadline passes, FPL creates a history row for the new gameweek
+        # with zero minutes, before a ball is kicked. Treating that as evidence
+        # of being dropped would quietly demote every player in the game, so a
+        # blank from an unfinished gameweek is skipped; a blank from a finished
+        # one is real evidence and is kept, as are minutes already played in a
+        # gameweek still in progress.
+        rows = [r for r in (fixture_hist.get(str(p["id"])) or [])
+                if r[1] > 0 or r[0] in finished_gws]
         state["recent"] = [(r[1], bool(r[2])) for r in reversed(rows)][:12]
         lineup = lineup_of.get(p["id"]) or ("bench" if team_has_lineup.get(p["team"]) else None)
         state["lineup"] = lineup
