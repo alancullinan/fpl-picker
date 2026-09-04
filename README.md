@@ -33,6 +33,10 @@ python3 pipeline/backtest.py --all --set att_fdr=0.2
 python3 pipeline/backtest.py --all --out data/backtest.json
 ```
 
+`--oracle minutes` feeds in actual minutes as a diagnostic: it shows that most remaining error
+is minutes prediction (best XI 58.2 with predicted minutes, 64.3 with real ones), which is
+where model work pays.
+
 Metrics: rank correlation between predicted and actual points, RMSE, actual points of the
 predicted best 1-4-4-2, actual points of the predicted top player, and the mean actual points
 of the fifty highest predictions. The replay is blind to injuries and news, which the live

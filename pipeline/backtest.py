@@ -149,10 +149,17 @@ def score(preds, actual, pos):
     }
 
 
-def run(rows, fx_by_gw, teams, raw, prior_by_code, P, first_gw=2, last_gw=38):
-    """Replay the season; return per-gameweek metrics for the model and baselines."""
+def run(rows, fx_by_gw, teams, raw, prior_by_code, P, first_gw=2, last_gw=38, oracle=""):
+    """Replay the season; return per-gameweek metrics for the model and baselines.
+
+    oracle="minutes" feeds each player's ACTUAL minutes for the gameweek into
+    the minutes model. It is not a usable model - it cheats - but it measures
+    how much of the remaining error is minutes prediction rather than rates.
+    """
     # Season-to-date state per player, rebuilt incrementally.
     state = {}
+    played_matches = []          # results so far, for the strength ratings
+    ratings = ({}, {})
     team_games = defaultdict(int)
     gk_by_team = defaultdict(set)
     results = defaultdict(list)  # variant -> [metrics per gw]
@@ -164,11 +171,19 @@ def run(rows, fx_by_gw, teams, raw, prior_by_code, P, first_gw=2, last_gw=38):
     for gw in all_gws:
         if first_gw <= gw <= last_gw and gw in rows and gw - 1 in rows:
             # Predictions for this gameweek using state from gameweeks < gw.
+            att_r, def_r = ratings
+            lg_avg = (sum(m["hg"] + m["ag"] for m in played_matches) / (2 * len(played_matches))) if played_matches else 1.4
             fixtures_this = defaultdict(list)
             for x in fx_by_gw.get(gw, []):
                 th, ta = int(x["team_h"]), int(x["team_a"])
-                fixtures_this[th].append({"fdr": int(f(x.get("team_h_difficulty"), 3)), "home": True})
-                fixtures_this[ta].append({"fdr": int(f(x.get("team_a_difficulty"), 3)), "home": False})
+                # lam is goals the team is expected to concede: the opponent's
+                # attack against this team's defence, the shape a goals market gives.
+                lam_h = def_r.get(th, 1.0) * att_r.get(ta, 1.0) * lg_avg * (1 - P["home_con"])
+                lam_a = def_r.get(ta, 1.0) * att_r.get(th, 1.0) * lg_avg * (1 + P["home_con"])
+                fixtures_this[th].append({"fdr": int(f(x.get("team_h_difficulty"), 3)), "home": True,
+                                          "oatt": att_r.get(ta), "odef": def_r.get(ta), "lam": lam_h})
+                fixtures_this[ta].append({"fdr": int(f(x.get("team_a_difficulty"), 3)), "home": False,
+                                          "oatt": att_r.get(th), "odef": def_r.get(th), "lam": lam_a})
             lam = {}
             for tid in teams:
                 gks = [state[e] for e in gk_by_team[tid] if e in state and state[e]["mins"] > 0]
@@ -192,6 +207,10 @@ def run(rows, fx_by_gw, teams, raw, prior_by_code, P, first_gw=2, last_gw=38):
                 pos[e] = p
                 st = state.get(e) or {"pos": p, "mins": 0.0, "starts": 0.0, "xg": 0.0, "xa": 0.0, "dc": 0.0, "saves": 0.0, "bonus": 0.0, "xgc": 0.0, "pts": 0.0, "games": 0, "recent": []}
                 st = dict(st, pos=p, team_games=team_games[r["_team"]], chance=1.0, status="a")
+                if oracle == "minutes":
+                    actual_min = sum(f(rr["minutes"]) for rr in rows[gw] if rr["_el"] == e)
+                    st["recent"] = None
+                    st["oracle_minutes"] = actual_min
                 code = int(f(raw.get(e, {}).get("code"), -1))
                 # Set-piece order comes from the PREVIOUS season's snapshot, which
                 # was known at the time. The live model uses the current order, so
@@ -222,6 +241,11 @@ def run(rows, fx_by_gw, teams, raw, prior_by_code, P, first_gw=2, last_gw=38):
         for x in fx_by_gw.get(gw, []):
             if x.get("finished") in ("True", "true", "1"):
                 played_teams.add(int(x["team_h"])); played_teams.add(int(x["team_a"]))
+                played_matches.append({"home": int(x["team_h"]), "away": int(x["team_a"]),
+                                       "hg": f(x["team_h_score"]), "ag": f(x["team_a_score"]), "gw": gw})
+        for m in played_matches:
+            m["age_days"] = (gw - m["gw"]) * 7.0
+        ratings = model.team_ratings(played_matches, P=P)
         for t in played_teams:
             team_games[t] += 1
         for r in rows[gw]:
@@ -262,6 +286,7 @@ def main():
     ap.add_argument("--last", type=int, default=38)
     ap.add_argument("--set", action="append", default=[], metavar="KEY=VALUE", help="override a model parameter")
     ap.add_argument("--all", action="store_true", help="score every season in SEASONS and report the mean")
+    ap.add_argument("--oracle", default="", choices=["", "minutes"], help="diagnostic: feed actual minutes to measure remaining headroom")
     a = ap.parse_args()
     params = dict(model.PARAMS)
     for kv in a.set:
@@ -284,7 +309,7 @@ def main():
     for season, prior_season in pairs:
         rows, fx, teams, raw = load_season(a.root, season)
         prior = load_prior(a.root, prior_season)
-        results, per_gw = run(rows, fx, teams, raw, prior, params, a.first, a.last)
+        results, per_gw = run(rows, fx, teams, raw, prior, params, a.first, a.last, a.oracle)
         summary = summarise(results)
         per_season[season] = summary
         all_out[season] = {"prior": prior_season, "summary": summary, "per_gw": per_gw}

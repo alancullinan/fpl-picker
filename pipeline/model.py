@@ -24,6 +24,25 @@ PARAMS = {
     "prev_min_minutes": 450,  # last season counts as a prior only above this
     "league_xgc": 1.35,       # goals conceded per game, league average
     "prior_games": 5,         # weight of that prior vs a team's observed xGC
+    # Opponent strength. FDR is FPL's five-level rating, set before the season.
+    # strength_model 1 uses attack/defence ratings fitted to match results.
+    # Left OFF: ratings lose to FDR on all three backtested seasons however
+    # they are shrunk (best XI 56.5-58.0 against 58.2), and even a 15% blend
+    # is worse. FDR is a forward-looking judgement of squad quality; ratings
+    # take most of a season to learn what FDR knows in August, and goal counts
+    # are noisy. The team's own defensive level already comes from its
+    # goalkeepers' xGC, which is the low-noise half of this term.
+    "strength_model": 0,
+    "str_blend": 1.0,         # 0 = pure FDR, 1 = pure ratings, between = geometric blend
+    "lam_direct": 0.0,        # 0: expected goals conceded = own xGC x opponent multiplier;
+                              # 1: taken directly from the fixture (fx["lam"]), the shape a
+                              # bookmaker's goals market would provide. Also tested and worse
+                              # (best XI 57.8 against 58.2), which is why bookmaker odds were
+                              # not pursued: this term has little headroom to win back.
+    "str_decay": 0.985,       # weight per day of age on a past result
+    "str_prior": 6.0,         # matches of "average team" mixed into each rating
+    "str_iters": 6,           # passes of the attack/defence fit
+    "str_clip": 0.55,         # ratings are clipped to 1 ± this, so one thrashing cannot dominate
     "att_fdr": 0.12,          # attack multiplier per FDR step away from 3
     "con_fdr": 0.15,          # concede multiplier per FDR step away from 3
     "home_att": 0.05,         # home/away attack swing
@@ -144,6 +163,9 @@ def minutes_probs(state, P=PARAMS, ahead=0):
         chance = min(chance, cap)
     elif tag in ("QUES", "DOUB", "GTD") and ahead == 0:
         chance = min(chance, P["lineup_ques"])
+    if state.get("oracle_minutes") is not None:   # backtest diagnostic only
+        m = state["oracle_minutes"]
+        return (1.0 if m > 0 else 0.0), (1.0 if m >= 60 else 0.0), m / 90.0
     recent = state.get("recent")
     if P["minutes_model"] >= 1 and recent:
         lineup = state.get("lineup") if ahead == 0 else None
@@ -193,6 +215,43 @@ def _recent_minutes(recent, prior_start, chance, P, lineup=None, confirmed=False
     return p_play, p_60, frac
 
 
+def team_ratings(matches, now=None, P=PARAMS):
+    """Attack and defence ratings per team from played matches. 1.0 is average.
+
+    matches: [{"home": tid, "away": tid, "hg": int, "ag": int, "age_days": float}]
+    Attack above 1 scores more than average; defence above 1 concedes more.
+    Both are shrunk towards 1 by str_prior matches of average, so a team with
+    two games played sits close to average rather than at an extreme.
+    """
+    teams = {m["home"] for m in matches} | {m["away"] for m in matches}
+    att = {t: 1.0 for t in teams}
+    dfn = {t: 1.0 for t in teams}
+    if not matches:
+        return att, dfn
+    wts = [P["str_decay"] ** max(0.0, m.get("age_days", 0.0)) for m in matches]
+    total_goals = sum((m["hg"] + m["ag"]) * w for m, w in zip(matches, wts))
+    total_w = sum(2 * w for w in wts)
+    avg = (total_goals / total_w) if total_w else 1.4
+    if avg <= 0:
+        return att, dfn
+    prior = P["str_prior"]
+    for _ in range(int(P["str_iters"])):
+        sa = {t: prior for t in teams}
+        na = {t: prior for t in teams}   # attack: goals scored / expected
+        sd = {t: prior for t in teams}
+        nd = {t: prior for t in teams}   # defence: goals conceded / expected
+        for m, w in zip(matches, wts):
+            h, a = m["home"], m["away"]
+            sa[h] += m["hg"] * w / max(0.2, dfn[a] * avg); na[h] += w
+            sa[a] += m["ag"] * w / max(0.2, dfn[h] * avg); na[a] += w
+            sd[h] += m["ag"] * w / max(0.2, att[a] * avg); nd[h] += w
+            sd[a] += m["hg"] * w / max(0.2, att[h] * avg); nd[a] += w
+        lo, hi = 1 - P["str_clip"], 1 + P["str_clip"]
+        att = {t: min(hi, max(lo, sa[t] / na[t])) for t in teams}
+        dfn = {t: min(hi, max(lo, sd[t] / nd[t])) for t in teams}
+    return att, dfn
+
+
 def team_xgc(gk_states, P=PARAMS):
     """A team's expected goals conceded per game, shrunk towards the league prior."""
     obs = sum(g["xgc"] for g in gk_states)
@@ -207,9 +266,22 @@ def fixture_xp(pos, r, p_play, p_60, lam_team, fx, P=PARAMS, frac=None):
     """
     if frac is None:
         frac = p_play
-    att = (1.0 + (3 - fx["fdr"]) * P["att_fdr"]) * (1 + P["home_att"] if fx["home"] else 1 - P["home_att"])
-    dfn = (1.0 + (fx["fdr"] - 3) * P["con_fdr"]) * (1 - P["home_con"] if fx["home"] else 1 + P["home_con"])
-    lam = lam_team * dfn
+    home_a = 1 + P["home_att"] if fx["home"] else 1 - P["home_att"]
+    home_c = 1 - P["home_con"] if fx["home"] else 1 + P["home_con"]
+    fdr_att = 1.0 + (3 - fx["fdr"]) * P["att_fdr"]
+    fdr_con = 1.0 + (fx["fdr"] - 3) * P["con_fdr"]
+    if P["strength_model"] >= 1 and fx.get("odef") is not None:
+        # Scoring chances scale with how leaky the opponent is; goals conceded
+        # scale with how dangerous they are. Blended with FDR, which is a
+        # forward-looking judgement of squad quality that results-based
+        # ratings take most of a season to learn.
+        b = P["str_blend"]
+        att = (fx["odef"] ** b) * (fdr_att ** (1 - b)) * home_a
+        dfn = (fx["oatt"] ** b) * (fdr_con ** (1 - b)) * home_c
+    else:
+        att = fdr_att * home_a
+        dfn = fdr_con * home_c
+    lam = fx["lam"] if (P["lam_direct"] >= 1 and fx.get("lam") is not None) else lam_team * dfn
     p_cs = math.exp(-lam)
     appearance = 2.0 * p_60 + 1.0 * (p_play - p_60)
     attack = (r["xg90"] * GOAL_PTS[pos] + r["xa90"] * ASSIST_PTS) * att * frac
