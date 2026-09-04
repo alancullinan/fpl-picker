@@ -104,6 +104,14 @@ Doubles add, blanks give 0. Minutes probability blends FPL's injury flag with st
 Known weaknesses: no penalty-taker bonus, no rotation awareness beyond start rate, bonus is
 crude, and FPL's FDR is a blunt instrument. Improve these before adding anything else.
 
+## Changing the model
+
+The model is `pipeline/model.py`; `pipeline/backtest.py` is the gate. Run it before and after
+any change (`--set key=value` tries a parameter without editing code) and keep a change only
+if rank correlation and best-XI points improve over 2025/26. Baseline on first run: rank
+correlation 0.48, best-XI 52.7 points per gameweek, against 0.38 and 40.8 for points-per-game
+form. Expert or crowd signals go through the same gate before they touch xP.
+
 ## What the API can and cannot show
 
 Picks and transfers for a gameweek appear in the public API only after that gameweek's

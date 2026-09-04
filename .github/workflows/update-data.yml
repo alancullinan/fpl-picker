@@ -33,7 +33,7 @@ jobs:
         run: |
           git config user.name "fpl-picker-bot"
           git config user.email "actions@users.noreply.github.com"
-          git add data/fpl.json
+          git add data/fpl.json data/history
           if git diff --cached --quiet; then
             echo "no data change"
           else

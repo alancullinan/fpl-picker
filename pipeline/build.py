@@ -9,27 +9,16 @@ for the scoring rules it encodes.
 import argparse
 import csv
 import json
-import math
 import os
+import sys
 from datetime import datetime, timezone
 
-POS = {1: "GKP", 2: "DEF", 3: "MID", 4: "FWD"}
-GOAL_PTS = {1: 10, 2: 6, 3: 5, 4: 4}
-CS_PTS = {1: 4, 2: 4, 3: 1, 4: 0}
-ASSIST_PTS = 3
-DEFCON_THRESHOLD = {2: 10, 3: 12, 4: 12}
-LEAGUE_XGC_PRIOR = 1.35      # goals conceded per game, league average
-PRIOR_GAMES = 5              # weight of the prior vs observed team xGC
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import model  # noqa: E402
+from model import PARAMS as P  # noqa: E402
+
+POS = model.POS
 HORIZON = 8                  # gameweeks of fixtures carried per team
-PRIOR_MINUTES = 900          # this season's per-90 rates are shrunk towards a prior
-                             # worth ten full games; ~GW12 the data dominates
-PREV_MIN_MINUTES = 450       # last season counts as a prior only above this
-# Positional priors per 90 at the position's median price. Attacking rates
-# scale with price because price is FPL's own prior on output.
-PRIOR_XG = {1: 0.0, 2: 0.06, 3: 0.16, 4: 0.35}
-PRIOR_XA = {1: 0.0, 2: 0.06, 3: 0.14, 4: 0.10}
-PRIOR_DC = {1: 0.0, 2: 8.5, 3: 6.0, 4: 3.0}
-PRIOR_SAVES = {1: 2.7, 2: 0.0, 3: 0.0, 4: 0.0}
 
 
 def load(raw, name):
@@ -60,22 +49,6 @@ def load_prev(raw):
             except (KeyError, ValueError):
                 continue
     return prev
-
-
-def shrink(obs_total, obs_minutes, prior_rate):
-    """Per-90 rate blending observed totals with a prior worth PRIOR_MINUTES."""
-    return (obs_total + prior_rate * PRIOR_MINUTES / 90.0) / ((obs_minutes + PRIOR_MINUTES) / 90.0)
-
-
-def fdr_attack_mult(fdr, home):
-    # FDR 3 is neutral. Easier fixtures lift attacking output, harder ones cut it.
-    m = 1.0 + (3 - fdr) * 0.12
-    return m * (1.05 if home else 0.95)
-
-
-def fdr_concede_mult(fdr, home):
-    m = 1.0 + (fdr - 3) * 0.15
-    return m * (0.92 if home else 1.08)
 
 
 def build(raw, out):
@@ -118,14 +91,12 @@ def build(raw, out):
                 "kickoff": f.get("kickoff_time"),
             })
 
-    # Team defensive strength: xG conceded per game from the goalkeepers' xGC,
-    # shrunk towards the league prior while the sample is small.
+    # Team defensive strength from the goalkeepers' xG conceded, shrunk to the league prior.
     team_xgc = {}
     for tid in teams:
-        gks = [p for p in bs["elements"] if p["team"] == tid and p["element_type"] == 1 and fnum(p["minutes"]) > 0]
-        obs_xgc = sum(fnum(p["expected_goals_conceded"]) for p in gks)
-        obs_games = sum(fnum(p["minutes"]) for p in gks) / 90.0
-        team_xgc[tid] = (obs_xgc + LEAGUE_XGC_PRIOR * PRIOR_GAMES) / (obs_games + PRIOR_GAMES)
+        gks = [{"xgc": fnum(p["expected_goals_conceded"]), "mins": fnum(p["minutes"])}
+               for p in bs["elements"] if p["team"] == tid and p["element_type"] == 1 and fnum(p["minutes"]) > 0]
+        team_xgc[tid] = model.team_xgc(gks, P)
 
     prev = load_prev(raw)
     median_price = {}
@@ -140,78 +111,23 @@ def build(raw, out):
         team_games = max(played.get(p["team"], 0), 1)
         starts = fnum(p.get("starts"))
 
-        # Priors: last season's rates when the sample is big enough, else a
-        # positional rate scaled by price.
-        scale = p["now_cost"] / median_price[pos]
         pr = prev.get(p["code"])
-        pmin = fnum(pr.get("minutes")) if pr else 0.0
-        if pr and pmin >= PREV_MIN_MINUTES:
-            prior_xg = fnum(pr.get("expected_goals")) / pmin * 90
-            prior_xa = fnum(pr.get("expected_assists")) / pmin * 90
-            prior_dc = fnum(pr.get("defensive_contribution")) / pmin * 90
-            prior_saves = fnum(pr.get("saves")) / pmin * 90
-            prior_bonus = fnum(pr.get("bonus")) / (pmin / 90.0)
-            prior_src = "prev"
-        else:
-            prior_xg = PRIOR_XG[pos] * scale ** 1.5
-            prior_xa = PRIOR_XA[pos] * scale ** 1.2
-            prior_dc = PRIOR_DC[pos]
-            prior_saves = PRIOR_SAVES[pos]
-            prior_bonus = min(1.0, 0.15 * scale ** 2)
-            prior_src = "price"
-
-        # Probability of playing next gameweek.
+        prior = model.make_prior(pos, p["now_cost"], median_price[pos], pr, P)
         chance = p.get("chance_of_playing_next_round")
-        chance = 1.0 if chance in (None, "None", "") else fnum(chance) / 100.0
-        if p["status"] in ("u", "n"):
-            chance = 0.0
-        if mins > 0:
-            start_rate = min(1.0, starts / team_games)
-            p_play = chance * max(0.15, 0.85 * start_rate + 0.15 * min(1.0, mins / (team_games * 90.0)))
-            p_60 = chance * min(1.0, mins / (team_games * 90.0)) * 0.95
-        else:
-            p_play = chance * 0.15
-            p_60 = p_play * 0.6
-
-        xg90 = shrink(fnum(p.get("expected_goals")), mins, prior_xg)
-        xa90 = shrink(fnum(p.get("expected_assists")), mins, prior_xa)
-        dc90 = shrink(fnum(p.get("defensive_contribution")), mins, prior_dc)
-        saves90 = shrink(fnum(p.get("saves")), mins, prior_saves)
-        bonus_pg = shrink(fnum(p.get("bonus")), mins, prior_bonus)
-        lam_team = team_xgc[p["team"]]
-
-        # Points per full 90 in a neutral fixture, broken into components.
-        def xp_for(fx):
-            att = fdr_attack_mult(fx["fdr"], fx["home"])
-            dfn = fdr_concede_mult(fx["fdr"], fx["home"])
-            lam = lam_team * dfn
-            p_cs = math.exp(-lam)
-            appearance = 2.0 * p_60 + 1.0 * (p_play - p_60)
-            attack = (xg90 * GOAL_PTS[pos] + xa90 * ASSIST_PTS) * att * p_play
-            cs = CS_PTS[pos] * p_cs * p_60
-            conceded = -(lam / 2.0) * p_60 if pos in (1, 2) else 0.0
-            defcon = 0.0
-            if pos in DEFCON_THRESHOLD and dc90 > 0:
-                z = (dc90 - DEFCON_THRESHOLD[pos]) / 3.0
-                defcon = 2.0 * (1.0 / (1.0 + math.exp(-z))) * p_60
-            saves = (saves90 / 3.0) * p_60 * dfn if pos == 1 else 0.0
-            bonus = bonus_pg * 0.7 * att * p_play
-            return {"app": appearance, "att": attack, "cs": cs + conceded, "dc": defcon, "sv": saves, "bon": bonus}
-
+        state = {
+            "pos": pos, "mins": mins, "starts": starts, "team_games": team_games,
+            "chance": 1.0 if chance in (None, "None", "") else fnum(chance) / 100.0, "status": p["status"],
+            "xg": fnum(p.get("expected_goals")), "xa": fnum(p.get("expected_assists")),
+            "dc": fnum(p.get("defensive_contribution")), "saves": fnum(p.get("saves")), "bonus": fnum(p.get("bonus")),
+        }
         fx_list = upcoming.get(p["team"], {})
-        gw_xp = []
-        parts1 = {}
-        for gw in range(next_id, next_id + HORIZON) if next_id else []:
-            total = 0.0
-            for fx in fx_list.get(gw, []):
-                parts = xp_for(fx)
-                total += sum(parts.values())
-                if gw == next_id:
-                    for k, v in parts.items():
-                        parts1[k] = round(parts1.get(k, 0.0) + v, 2)
-            gw_xp.append(round(total, 2))
+        fixtures_by_gw = [fx_list.get(gw, []) for gw in range(next_id, next_id + HORIZON)] if next_id else []
+        gw_xp, parts1, r, p_play = model.player_xp(state, prior, fixtures_by_gw, team_xgc[p["team"]], P)
+        gw_xp = [round(v, 2) for v in gw_xp]
+        parts1 = {k: round(v, 2) for k, v in parts1.items()}
         xp1 = gw_xp[0] if gw_xp else 0.0
         xp5 = round(sum(gw_xp[:5]), 2)
+        xg90, xa90, dc90, saves90, bonus_pg, prior_src = r["xg90"], r["xa90"], r["dc90"], r["sv90"], r["bon"], r["src"]
 
         players.append({
             "id": p["id"],
@@ -339,8 +255,29 @@ def build(raw, out):
     os.makedirs(os.path.dirname(out) or ".", exist_ok=True)
     with open(out, "w", encoding="utf-8") as f:
         json.dump(bundle, f, separators=(",", ":"))
+    snapshot(bundle, os.path.join(os.path.dirname(out) or ".", "history"))
     print(f"wrote {out} ({os.path.getsize(out)//1024} KB): {len(players)} players, next GW {next_id}, "
           f"team {'ok' if my and my['picks'] else 'absent'}")
+
+
+def snapshot(bundle, hist_dir):
+    """Record this run's next-gameweek predictions so they can be scored later.
+
+    One file per gameweek, overwritten on every run until the deadline passes,
+    after which next_gw moves on and the file is frozen.
+    """
+    gw = bundle.get("next_gw")
+    if not gw:
+        return
+    os.makedirs(hist_dir, exist_ok=True)
+    path = os.path.join(hist_dir, f"gw{gw:02d}.json")
+    data = {
+        "gw": gw, "generated": bundle["generated"],
+        "players": {str(p["id"]): [p["xp1"], p["p_play"], p["ep_next"]] for p in bundle["players"]},
+    }
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(data, f, separators=(",", ":"))
+    print(f"wrote {path}")
 
 
 def free_transfers(history):

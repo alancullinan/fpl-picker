@@ -14,9 +14,30 @@ pipeline/build.py   ->  data/fpl.json        one bundle the site reads (committe
 index.html + app.js ->  the site
 ```
 
-The expected-points model lives in `build.py` and is deliberately simple and inspectable.
-Every input it uses is in the bundle, so a number on the site can be traced back by hand.
-The rules it encodes are written up in `.claude/skills/fpl/SKILL.md`.
+The expected-points model lives in `pipeline/model.py` and is deliberately simple and
+inspectable. Every input it uses is in the bundle, so a number on the site can be traced back
+by hand. The rules it encodes are written up in `.claude/skills/fpl/SKILL.md`.
+
+## Measuring the model
+
+`pipeline/backtest.py` replays a finished season one deadline at a time, rebuilding what the
+model would have known and scoring its next-gameweek prediction against actual points. Two
+baselines are scored the same way: season points per game, and the xP column of the Vaastav
+dataset. Every change to the model should be justified by this before it ships.
+
+```
+python3 pipeline/backtest.py --season 2025-26 --prior 2024-25 --fetch   # first time
+python3 pipeline/backtest.py --set att_fdr=0.2                          # try a parameter
+python3 pipeline/backtest.py --out data/backtest.json                   # record the result
+```
+
+Metrics: rank correlation between predicted and actual points, RMSE, actual points of the
+predicted best 1-4-4-2, actual points of the predicted top player, and the mean actual points
+of the fifty highest predictions. The replay is blind to injuries and news, which the live
+model does see, so absolute numbers understate live accuracy; the comparison is what counts.
+
+The live pipeline also snapshots each run's next-gameweek predictions to `data/history/`, so
+the live model, availability flags included, can be scored once results are in.
 
 ## Setup
 

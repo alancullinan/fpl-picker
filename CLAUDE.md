@@ -12,8 +12,12 @@ Pages from the `main` branch root.
 ## Layout
 
 - `pipeline/fetch.py`: raw FPL API responses into `data/raw/` (gitignored). Standard library only.
-- `pipeline/build.py`: raw into `data/fpl.json`, the single bundle the site reads. Contains the
-  expected-points model. Standard library only.
+- `pipeline/model.py`: the expected-points model as pure functions of "what was known at the
+  deadline", with every tunable in `PARAMS`. Shared by build and backtest.
+- `pipeline/build.py`: raw into `data/fpl.json`, the single bundle the site reads, plus a
+  prediction snapshot in `data/history/gwNN.json`. Standard library only.
+- `pipeline/backtest.py`: replays a past season from the Vaastav mirror and scores the model
+  against baselines; `--set key=value` tries parameter changes. Writes `data/backtest.json`.
 - `index.html`, `app.js`, `styles.css`: the site. Three views: My Team, Players, Fixtures.
 - `.github/workflows/update-data.yml`: runs fetch and build on request (workflow_dispatch, or
   a push touching the pipeline) and commits the bundle. There is no schedule by design.
@@ -26,8 +30,9 @@ Pages from the `main` branch root.
 - Never commit `data/raw/`. Commit `data/fpl.json` only via the Action (or deliberately, to seed).
 - The FPL API is unofficial and undocumented. Handle missing keys defensively; `fetch.py` treats
   a missing entry as non-fatal so the player data still refreshes.
-- The model in `build.py` must stay explainable: every term is one line, every input is in the
-  bundle. If you change a coefficient, say why in the commit message.
+- The model in `model.py` must stay explainable: every term is one line, every input is in the
+  bundle. Any change to it, coefficients included, is justified by a backtest run: quote the
+  before and after rank correlation and best-XI points in the commit message.
 - Bump the `?v=` query on `app.js` and `styles.css` in `index.html` when changing them; GitHub
   Pages caches aggressively.
 - Team advice must respect the rules in the skill: squad shape, 3 per club, budget, hits, chips.
