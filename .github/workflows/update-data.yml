@@ -1,8 +1,13 @@
 name: Update FPL data
 
-# Runs on request only: from the Actions tab, from the site's "Refresh data"
-# button (workflow_dispatch through the API), or when the pipeline itself changes.
+# Runs every morning so the week's planning uses fresh prices, ownership and
+# injury news, and every three hours once the next deadline is within 36 hours
+# so predicted lineups and press-conference news land in time. Also on request
+# (Actions tab or the site's Refresh button) and when the pipeline changes.
 on:
+  schedule:
+    - cron: "0 6 * * *"        # daily, 06:00 UTC
+    - cron: "0 */3 * * *"      # every 3 hours; skipped unless near a deadline
   workflow_dispatch:
   push:
     branches: [main]
@@ -20,16 +25,40 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Decide whether this run is needed
+        id: gate
+        env:
+          SCHEDULE: ${{ github.event.schedule }}
+        run: |
+          if [ "$SCHEDULE" = "0 */3 * * *" ]; then
+            python3 - <<'PY' >> "$GITHUB_OUTPUT"
+          import json, datetime
+          try:
+              d = json.load(open("data/fpl.json"))["deadline"]
+              hours = (datetime.datetime.fromisoformat(d.replace("Z", "+00:00")) - datetime.datetime.now(datetime.timezone.utc)).total_seconds() / 3600
+              print("run=" + ("yes" if -1 < hours <= 36 else "no"))
+              print(f"note=deadline in {hours:.1f} h")
+          except Exception as e:
+              print("run=yes"); print(f"note=no deadline known ({e})")
+          PY
+          else
+            echo "run=yes" >> "$GITHUB_OUTPUT"
+          fi
+          cat "$GITHUB_OUTPUT"
       - uses: actions/setup-python@v5
+        if: steps.gate.outputs.run == 'yes'
         with:
           python-version: "3.12"
       - name: Fetch raw data
+        if: steps.gate.outputs.run == 'yes'
         env:
           FPL_ENTRY_ID: ${{ vars.FPL_ENTRY_ID }}
         run: python pipeline/fetch.py
       - name: Build site bundle
+        if: steps.gate.outputs.run == 'yes'
         run: python pipeline/build.py
       - name: Commit if changed
+        if: steps.gate.outputs.run == 'yes'
         run: |
           git config user.name "fpl-picker-bot"
           git config user.email "actions@users.noreply.github.com"

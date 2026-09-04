@@ -24,8 +24,9 @@ Pages from the `main` branch root.
 - `pipeline/backtest.py`: replays a past season from the Vaastav mirror and scores the model
   against baselines; `--set key=value` tries parameter changes. Writes `data/backtest.json`.
 - `index.html`, `app.js`, `styles.css`: the site. Three views: My Team, Players, Fixtures.
-- `.github/workflows/update-data.yml`: runs fetch and build on request (workflow_dispatch, or
-  a push touching the pipeline) and commits the bundle. There is no schedule by design.
+- `.github/workflows/update-data.yml`: runs fetch and build daily at 06:00 UTC, every three
+  hours when the next deadline (read from the committed bundle) is within 36 hours, on request,
+  and on a push touching the pipeline. Commits the bundle and the prediction snapshot.
 - `.claude/skills/fpl/SKILL.md`: the FPL rules (squad, transfers, chips, scoring) and the weekly
   workflow. Read it before touching the model or giving any team advice.
 

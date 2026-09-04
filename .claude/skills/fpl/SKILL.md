@@ -142,8 +142,8 @@ confirmed squad is current.
 ## Weekly workflow
 
 1. Confirm the data is fresh (`generated` in the bundle, or the footer of the site). The
-   workflow runs on request only: run "Update FPL data" from the Actions tab or the site's
-   Refresh button after the press conferences, typically Friday morning.
+   workflow runs every morning and every three hours in the 36 hours before a deadline; the
+   site's Refresh button or the Actions tab forces a run in between.
 2. Read `me`: bank, FTs, chips left in the current half, current XI and captain.
 3. Injuries and doubts in the 15: anyone with `status` not `a` or `chance` below 75 is a
    candidate to move. Quote the `news` text.

@@ -43,6 +43,7 @@ PARAMS = {
     "mins_start": 85.0,       # default minutes for a start
     "p60_start": 0.9,         # default chance a start reaches 60 minutes
     "unseen_start": 0.35,     # prior start rate with no history at all
+    "prev_shrink": 0.0,       # minutes of positional prior blended into last season's rates (0 = off)
     # Predicted lineups (Rotowire): how far to move the start probability
     "lineup_w": 0.7,          # weight of a predicted lineup vs the minutes history
     "lineup_w_confirmed": 0.95,
@@ -58,10 +59,14 @@ def make_prior(pos, price, median_price, prev, P=PARAMS):
     pmin = float(prev.get("minutes") or 0) if prev else 0.0
     if prev and pmin >= P["prev_min_minutes"]:
         g = pmin / 90.0
+        k = P["prev_shrink"] / 90.0  # positional prior worth this many games
+        pos_xg, pos_xa = PRIOR_XG[pos] * scale ** 1.5, PRIOR_XA[pos] * scale ** 1.2
         return {
-            "xg": float(prev.get("expected_goals") or 0) / g, "xa": float(prev.get("expected_assists") or 0) / g,
-            "dc": float(prev.get("defensive_contribution") or 0) / g, "saves": float(prev.get("saves") or 0) / g,
-            "bonus": float(prev.get("bonus") or 0) / g, "src": "prev",
+            "xg": (float(prev.get("expected_goals") or 0) + pos_xg * k) / (g + k),
+            "xa": (float(prev.get("expected_assists") or 0) + pos_xa * k) / (g + k),
+            "dc": (float(prev.get("defensive_contribution") or 0) + PRIOR_DC[pos] * k) / (g + k),
+            "saves": (float(prev.get("saves") or 0) + PRIOR_SAVES[pos] * k) / (g + k),
+            "bonus": (float(prev.get("bonus") or 0) + min(1.0, 0.15 * scale ** 2) * k) / (g + k), "src": "prev",
             "start": min(1.0, float(prev.get("starts") or 0) / 38.0),
         }
     return {

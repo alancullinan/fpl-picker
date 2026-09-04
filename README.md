@@ -3,8 +3,8 @@
 A small static site that pulls together the numbers needed to pick a Fantasy Premier League
 team each week: your current squad, an expected-points estimate for every player, a fixture
 ticker, and a planning mode for trying transfers, lineups, captains and chips before the
-deadline. No server: a GitHub Action refreshes `data/fpl.json` on request and GitHub Pages
-serves the page.
+deadline. No server: a GitHub Action refreshes `data/fpl.json` daily and more often near the
+deadline, and GitHub Pages serves the page.
 
 ## How it works
 
@@ -44,10 +44,13 @@ the live model, availability flags included, can be scored once results are in.
 1. **Pages**: Settings, Pages, "Deploy from a branch", branch `main`, folder `/ (root)`.
 2. **Entry ID**: the pipeline defaults to entry `4853364`. To change it, add a repository
    variable `FPL_ENTRY_ID` (Settings, Secrets and variables, Actions, Variables).
-3. **Refreshing data**: the workflow runs on request, not on a schedule. Either press
-   "Run workflow" on the Actions tab, or use the site's "Refresh data" button, which asks once
-   for a fine-grained personal access token (this repo only, Actions read and write) and keeps
-   it in the browser. Each run commits `data/fpl.json` only when something changed.
+3. **Refreshing data**: the workflow runs every morning (06:00 UTC), and every three hours
+   once the next deadline is within 36 hours so predicted lineups and press-conference news
+   arrive in time. For anything in between, press "Run workflow" on the Actions tab or use the
+   site's "Refresh data" button, which asks once for a fine-grained personal access token (this
+   repo only, Actions read and write) and keeps it in the browser. Each run commits
+   `data/fpl.json` only when something changed. GitHub pauses schedules on repositories with
+   no commits for 60 days, so over the summer a manual run restarts them.
 
 ## Planning mode
 
