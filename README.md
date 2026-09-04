@@ -64,6 +64,19 @@ squad itself sits in a collapsible reference below. The plan is kept in the brow
 budget, the three-per-club limit, formation and free transfers, and is cleared once FPL
 confirms a newer squad. It is a scratchpad; the transfers still have to be made in the FPL app.
 
+## Cross-device sync (optional)
+
+`firebase-config.js` holds a Firebase web config. With it set, the site offers Google sign-in
+in the footer and keeps the plan, the table settings and the GitHub refresh token in Firestore
+under `users/{uid}`, so every browser signed in with the same Google account shares them.
+Local storage stays as the offline copy and the newer timestamp wins. Set the config to `null`
+to turn sync off; nothing loads and the site behaves as before.
+
+The config values are public identifiers, not secrets. Access is controlled by
+`firestore.rules`, which allows a signed-in user to read and write only their own subtree.
+Those rules must be published in the Firebase console (Firestore, Rules) for the project to be
+safe, and the site's domain must be listed under Authentication, Settings, Authorized domains.
+
 ## Data sources
 
 - Official FPL API (`fantasy.premierleague.com/api`): players, prices, xG/xA, fixtures, your entry,

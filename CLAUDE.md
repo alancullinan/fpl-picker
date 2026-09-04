@@ -46,7 +46,13 @@ Pages from the `main` branch root.
   `me.picks` and the UI shows the diff against it. It is dropped when `me.picks_gw` moves on. The public API never shows
   pre-deadline changes, so do not try to "fix" that in the pipeline.
 - The "Refresh data" button dispatches the workflow through the GitHub API with a token the
-  user pastes once (`localStorage` key `fplpicker.gh`). Never commit a token anywhere.
+  user pastes once (`localStorage` key `fplpicker.gh`, mirrored to Firestore when signed in).
+  Never commit a token anywhere.
+- Sync is optional and must stay that way: with `window.FPL_FIREBASE` null the site loads no
+  Firebase code and works exactly as before. The Firebase config in `firebase-config.js` is a
+  public identifier, but `firestore.rules` is the security boundary - keep it restricted to
+  `users/{uid}` and publish any change in the Firebase console, since the file in the repo is
+  documentation, not deployment.
 
 ## Local run
 
