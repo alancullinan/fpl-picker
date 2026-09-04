@@ -48,8 +48,12 @@ PARAMS = {
     "str_prior": 6.0,         # matches of "average team" mixed into each rating
     "str_iters": 6,           # passes of the attack/defence fit
     "str_clip": 0.55,         # ratings are clipped to 1 ± this, so one thrashing cannot dominate
-    "att_fdr": 0.12,          # attack multiplier per FDR step away from 3
-    "con_fdr": 0.15,          # concede multiplier per FDR step away from 3
+    "att_fdr": 0.18,          # attack multiplier per FDR step away from 3
+    "con_fdr": 0.22,          # concede multiplier per FDR step away from 3
+                              # (0.12/0.15 under-separated fixtures: one step of difficulty
+                              # was worth 12% against a 10% home/away swing, so a hard home
+                              # game scored the same as a neutral away one. 0.18/0.22 improves
+                              # RMSE in all three backtested seasons and best XI on the mean.)
     "home_att": 0.05,         # home/away attack swing
     "home_con": 0.08,         # home/away concede swing
     "bonus_shrink": 0.7,      # bonus per game is noisy; damp it

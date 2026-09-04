@@ -98,7 +98,8 @@ expected goals-conceded penalties for GKP/DEF, plus 2 × P(DefCon) from a logist
 player's DefCon per 90 against the threshold, plus saves/3 for keepers, plus shrunk bonus per
 game. Per-90 rates are shrunk towards a prior (last season's rate if 450+ minutes, otherwise a
 positional rate scaled by price) with the prior worth 900 minutes. Fixture multipliers:
-attack 1 + (3 - FDR) × 0.12, concede 1 + (FDR - 3) × 0.15, home ±5% attack and ±8% concede.
+attack 1 + (3 - FDR) × 0.18, concede 1 + (FDR - 3) × 0.22, home ±5% attack and ±8% concede.
+Home advantage was tested at 2-12% and 5% remains best.
 Doubles add, blanks give 0.
 
 Minutes: each player's recent fixtures (most recent weighted 1, each older one ×0.55) give a
