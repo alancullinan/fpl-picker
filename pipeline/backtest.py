@@ -183,7 +183,7 @@ def run(rows, fx_by_gw, teams, raw, prior_by_code, P, first_gw=2, last_gw=38):
                 seen.add(e)
                 p = POS_ID.get(r["position"], 3)
                 pos[e] = p
-                st = state.get(e) or {"pos": p, "mins": 0.0, "starts": 0.0, "xg": 0.0, "xa": 0.0, "dc": 0.0, "saves": 0.0, "bonus": 0.0, "xgc": 0.0, "pts": 0.0, "games": 0}
+                st = state.get(e) or {"pos": p, "mins": 0.0, "starts": 0.0, "xg": 0.0, "xa": 0.0, "dc": 0.0, "saves": 0.0, "bonus": 0.0, "xgc": 0.0, "pts": 0.0, "games": 0, "recent": []}
                 st = dict(st, pos=p, team_games=team_games[r["_team"]], chance=1.0, status="a")
                 code = int(f(raw.get(e, {}).get("code"), -1))
                 prior = model.make_prior(p, f(r["value"], 50), median_price.get(p, 50), prior_by_code.get(code), P)
@@ -214,7 +214,9 @@ def run(rows, fx_by_gw, teams, raw, prior_by_code, P, first_gw=2, last_gw=38):
         for r in rows[gw]:
             e = r["_el"]
             p = POS_ID.get(r["position"], 3)
-            st = state.setdefault(e, {"pos": p, "mins": 0.0, "starts": 0.0, "xg": 0.0, "xa": 0.0, "dc": 0.0, "saves": 0.0, "bonus": 0.0, "xgc": 0.0, "pts": 0.0, "games": 0})
+            st = state.setdefault(e, {"pos": p, "mins": 0.0, "starts": 0.0, "xg": 0.0, "xa": 0.0, "dc": 0.0, "saves": 0.0, "bonus": 0.0, "xgc": 0.0, "pts": 0.0, "games": 0, "recent": []})
+            st["recent"].insert(0, (f(r["minutes"]), f(r.get("starts")) > 0))
+            del st["recent"][12:]
             st["mins"] += f(r["minutes"]); st["starts"] += f(r.get("starts"))
             st["xg"] += f(r["expected_goals"]); st["xa"] += f(r["expected_assists"])
             st["dc"] += f(r.get("defensive_contribution")); st["saves"] += f(r["saves"])

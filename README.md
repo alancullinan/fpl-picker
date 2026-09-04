@@ -63,6 +63,8 @@ confirms a newer squad. It is a scratchpad; the transfers still have to be made 
 
 ## Data sources
 
-- Official FPL API (`fantasy.premierleague.com/api`): players, prices, xG/xA, fixtures, your entry.
+- Official FPL API (`fantasy.premierleague.com/api`): players, prices, xG/xA, fixtures, your entry,
+  and each featured player's per-fixture minutes (one `element-summary` call per player, fetched
+  concurrently) for the minutes model.
 - [Vaastav's FPL dataset](https://github.com/vaastav/Fantasy-Premier-League): last season's
   per-player totals, used as a prior while the new season's sample is small.

@@ -99,6 +99,7 @@ def build(raw, out):
         team_xgc[tid] = model.team_xgc(gks, P)
 
     prev = load_prev(raw)
+    history = load(raw, "element-history.json") or {}
     median_price = {}
     for pos in POS:
         prices = sorted(e["now_cost"] for e in bs["elements"] if e["element_type"] == pos)
@@ -120,9 +121,13 @@ def build(raw, out):
             "xg": fnum(p.get("expected_goals")), "xa": fnum(p.get("expected_assists")),
             "dc": fnum(p.get("defensive_contribution")), "saves": fnum(p.get("saves")), "bonus": fnum(p.get("bonus")),
         }
+        # Most recent fixture first, as (minutes, started), for the minutes model.
+        rows = history.get(str(p["id"])) or []
+        state["recent"] = [(r[1], bool(r[2])) for r in reversed(rows)][:12]
         fx_list = upcoming.get(p["team"], {})
         fixtures_by_gw = [fx_list.get(gw, []) for gw in range(next_id, next_id + HORIZON)] if next_id else []
         gw_xp, parts1, r, p_play = model.player_xp(state, prior, fixtures_by_gw, team_xgc[p["team"]], P)
+        _, p_60, exp_frac = model.minutes_probs(dict(state, prior_start=prior.get("start", P["unseen_start"])), P)
         gw_xp = [round(v, 2) for v in gw_xp]
         parts1 = {k: round(v, 2) for k, v in parts1.items()}
         xp1 = gw_xp[0] if gw_xp else 0.0
@@ -163,6 +168,9 @@ def build(raw, out):
             "ict": fnum(p.get("ict_index")),
             "ep_next": fnum(p.get("ep_next")),
             "p_play": round(p_play, 2),
+            "p_60": round(p_60, 2),
+            "xmin": int(round(exp_frac * 90)),
+            "recent": [int(r[1]) for r in rows[-6:]],
             "xp1": xp1,
             "xp5": xp5,
             "xp_gw": gw_xp,

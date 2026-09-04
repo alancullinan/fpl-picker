@@ -12,6 +12,8 @@ Pages from the `main` branch root.
 ## Layout
 
 - `pipeline/fetch.py`: raw FPL API responses into `data/raw/` (gitignored). Standard library only.
+  Includes one `element-summary` call per featured player (threaded, best effort); a player
+  without history falls back to season totals in the minutes model.
 - `pipeline/model.py`: the expected-points model as pure functions of "what was known at the
   deadline", with every tunable in `PARAMS`. Shared by build and backtest.
 - `pipeline/build.py`: raw into `data/fpl.json`, the single bundle the site reads, plus a

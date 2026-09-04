@@ -12,8 +12,11 @@ Files written (all raw API responses, untouched):
   entry-picks.json        squad picked for the latest gameweek (absent pre-season)
   prev-season.csv         last season's per-player totals (Vaastav mirror), used as
                           the prior for per-90 rates while this season's sample is small
+  element-history.json    per-fixture minutes and starts this season for every player who
+                          has featured or is flagged, from element-summary (one call each)
 """
 import argparse
+import concurrent.futures
 import json
 import os
 import sys
@@ -63,6 +66,35 @@ def fetch_prev_season(bootstrap, out):
         print(f"prev-season prior unavailable: {e}", file=sys.stderr)
 
 
+def fetch_element_history(bootstrap, out, workers=8):
+    """Per-fixture history for the minutes model, from element-summary.
+
+    Only players with minutes or an availability flag are fetched: unused
+    squad players contribute nothing to the estimate. Failures leave a player
+    without history, and the model falls back to season totals for them.
+    """
+    wanted = [e["id"] for e in bootstrap["elements"]
+              if (e.get("minutes") or 0) > 0 or e.get("status") != "a" or e.get("news")]
+    hist = {}
+
+    def one(pid):
+        try:
+            d = get(f"element-summary/{pid}", retries=2)
+        except Exception:  # noqa: BLE001
+            return pid, None
+        if not d:
+            return pid, None
+        rows = sorted(d.get("history", []), key=lambda h: (h.get("round", 0), h.get("kickoff_time") or ""))
+        return pid, [[h.get("round"), h.get("minutes", 0), 1 if h.get("starts") else 0] for h in rows]
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as ex:
+        for pid, rows in ex.map(one, wanted):
+            if rows is not None:
+                hist[str(pid)] = rows
+    save(out, "element-history.json", hist)
+    print(f"element history for {len(hist)} of {len(wanted)} players")
+
+
 def save(out, name, payload):
     path = os.path.join(out, name)
     with open(path, "w", encoding="utf-8") as f:
@@ -84,6 +116,7 @@ def main():
     save(args.out, "bootstrap-static.json", bootstrap)
     save(args.out, "fixtures.json", get("fixtures"))
     fetch_prev_season(bootstrap, args.out)
+    fetch_element_history(bootstrap, args.out)
 
     entry = get(f"entry/{args.entry}")
     if entry is None:
