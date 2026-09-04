@@ -24,14 +24,18 @@
   const defaults = { view: 'team', pos: 0, team: 0, price: '', avail: true, mine: false, search: '', sort: 'xpn', dir: -1, horizon: 5, xh: 5 };
   let S = { ...defaults };
   try { S = { ...defaults, ...JSON.parse(localStorage.getItem('fplpicker') || '{}') }; } catch (e) { /* fresh */ }
-  const persist = () => { try { localStorage.setItem('fplpicker', JSON.stringify(S)); } catch (e) { /* ignore */ } };
+  const persist = () => { try { localStorage.setItem('fplpicker', JSON.stringify(S)); } catch (e) { /* ignore */ } Sync.pushSettings(); };
 
   // ---------- plan (planning mode state, browser only) ----------
   // { base_gw, picks: [{id, slot, c, vc}], swaps: [{out, in}], chip }
   let P = null;
   let pendingSwap = null; // player id awaiting a second tap to swap slots
   const loadPlan = () => { try { P = JSON.parse(localStorage.getItem('fplplan') || 'null'); } catch (e) { P = null; } };
-  const savePlan = () => { try { if (P) localStorage.setItem('fplplan', JSON.stringify(P)); else localStorage.removeItem('fplplan'); } catch (e) { /* ignore */ } };
+  const savePlan = (fromRemote) => {
+    if (P && !fromRemote) P.updated = Date.now();
+    try { if (P) localStorage.setItem('fplplan', JSON.stringify(P)); else localStorage.removeItem('fplplan'); } catch (e) { /* ignore */ }
+    if (!fromRemote) Sync.pushPlan();
+  };
   function freshPlan() { return { base_gw: D.me.picks_gw, picks: D.me.picks.map((x) => ({ ...x })), swaps: [], chip: null }; }
   function startPlan() { if (!P && D.me && D.me.picks.length) { P = freshPlan(); savePlan(); } }
   function resetPlan() { P = freshPlan(); pendingSwap = null; savePlan(); renderTeam(); renderPlayers(); }
@@ -171,6 +175,7 @@
     renderPlayers();
     renderFixtures();
     showView(S.view);
+    Sync.start();
     $('#generated').textContent = 'Data refreshed ' + relTime(D.generated) + ' (' + fmtDate(D.generated) + ').' + (D.lineups ? ` Predicted lineups: ${D.lineups.matches.length} matches from Rotowire.` : ' No predicted lineups in this refresh.');
   }
   function note(msg) { const st = $('#status'); st.textContent = msg; st.classList.remove('hidden'); }
@@ -642,7 +647,7 @@
   // Triggers the "Update FPL data" workflow through the GitHub API with a
   // fine-grained token kept only in this browser, then waits for the new bundle.
   const tokenKey = 'fplpicker.gh';
-  const getToken = () => { try { return localStorage.getItem(tokenKey) || ''; } catch (e) { return ''; } };
+  const getToken = () => { if (Sync.token) return Sync.token; try { return localStorage.getItem(tokenKey) || ''; } catch (e) { return ''; } };
   const actionsUrl = `https://github.com/${REPO.owner}/${REPO.name}/actions/workflows/${REPO.workflow}`;
   $('#refresh').addEventListener('click', () => {
     const tok = getToken();
@@ -659,6 +664,7 @@
       const v = $('#tok').value.trim();
       if (!v) return;
       try { localStorage.setItem(tokenKey, v); } catch (e) { /* ignore */ }
+      Sync.pushToken(v);
       closeModal(); triggerRefresh(v);
     });
   }
@@ -670,7 +676,7 @@
         method: 'POST', headers: { Authorization: 'Bearer ' + tok, Accept: 'application/vnd.github+json', 'Content-Type': 'application/json' },
         body: JSON.stringify({ ref: 'main' }),
       });
-      if (r.status === 401 || r.status === 403 || r.status === 404) { try { localStorage.removeItem(tokenKey); } catch (e) { /* ignore */ } throw new Error('GitHub rejected the token (HTTP ' + r.status + '). It was cleared; try again.'); }
+      if (r.status === 401 || r.status === 403 || r.status === 404) { try { localStorage.removeItem(tokenKey); } catch (e) { /* ignore */ } Sync.pushToken(''); throw new Error('GitHub rejected the token (HTTP ' + r.status + '). It was cleared; try again.'); }
       if (!r.ok) throw new Error('HTTP ' + r.status);
     } catch (e) {
       note('Refresh failed: ' + e.message); btn.disabled = false; btn.textContent = 'Refresh data'; return;
@@ -688,6 +694,96 @@
     };
     setTimeout(poll, 20000);
   }
+
+  // ---------- cross-device sync (Firebase, optional) ----------
+  // With window.FPL_FIREBASE set, the plan, settings and the refresh token
+  // live in Firestore under the signed-in user's document, so every browser
+  // signed in with the same Google account sees the same plan. Local storage
+  // stays as the offline copy; the newer timestamp wins.
+  const Sync = (() => {
+    const cfg = window.FPL_FIREBASE;
+    const client = Math.random().toString(36).slice(2);
+    let fb = null, db = null, user = null, ready = false, unsub = null;
+    let pushTimer = null, settingsTimer = null;
+    const api = { token: '', pushPlan() {}, pushSettings() {}, pushToken() {}, start() {} };
+    if (!cfg) return api;
+    const status = (msg) => { $('#sync-status').textContent = msg; };
+    const loadScript = (src) => new Promise((res, rej) => { const el = document.createElement('script'); el.src = src; el.onload = res; el.onerror = () => rej(new Error('failed to load ' + src)); document.head.appendChild(el); });
+    const V = '10.14.1';
+    const docRef = (name) => db.collection('users').doc(user.uid).collection('data').doc(name);
+
+    api.start = async () => {
+      $('#syncrow').classList.remove('hidden');
+      status('Sync: loading…');
+      try {
+        await loadScript(`https://www.gstatic.com/firebasejs/${V}/firebase-app-compat.js`);
+        await loadScript(`https://www.gstatic.com/firebasejs/${V}/firebase-auth-compat.js`);
+        await loadScript(`https://www.gstatic.com/firebasejs/${V}/firebase-firestore-compat.js`);
+        fb = window.firebase; fb.initializeApp(cfg); db = fb.firestore();
+      } catch (e) {
+        status('Sync unavailable: ' + e.message); $('#sync-btn').classList.add('hidden'); return;
+      }
+      $('#sync-btn').addEventListener('click', async () => {
+        if (user) { await fb.auth().signOut(); return; }
+        const provider = new fb.auth.GoogleAuthProvider();
+        try { await fb.auth().signInWithPopup(provider); }
+        catch (e) {
+          if (e.code === 'auth/popup-blocked' || e.code === 'auth/operation-not-supported-in-this-environment') await fb.auth().signInWithRedirect(provider);
+          else status('Sign-in failed: ' + (e.message || e.code));
+        }
+      });
+      fb.auth().onAuthStateChanged(async (u) => {
+        user = u; ready = false;
+        if (unsub) { unsub(); unsub = null; }
+        if (!u) { api.token = ''; status('Sync: not signed in. Plan is kept in this browser only.'); $('#sync-btn').textContent = 'Sign in to sync'; return; }
+        $('#sync-btn').textContent = 'Sign out';
+        status(`Sync: signed in as ${u.displayName || u.email}`);
+        await pullAll();
+        ready = true;
+        unsub = docRef('plan').onSnapshot((snap) => applyRemotePlan(snap.data()));
+      });
+    };
+    async function pullAll() {
+      try {
+        const [planSnap, setSnap, secSnap] = await Promise.all([docRef('plan').get(), docRef('settings').get(), docRef('secrets').get()]);
+        applyRemotePlan(planSnap.data(), true);
+        const rs = setSnap.data();
+        if (rs && rs.updated && rs.updated > (S.updated || 0)) { Object.assign(S, rs.values, { updated: rs.updated }); try { localStorage.setItem('fplpicker', JSON.stringify(S)); } catch (e) { /* ignore */ } renderTeam(); renderPlayers(); renderFixtures(); }
+        else if (S.updated) api.pushSettings(true);
+        const sec = secSnap.data();
+        if (sec && sec.gh) { api.token = sec.gh; try { localStorage.setItem(tokenKey, sec.gh); } catch (e) { /* ignore */ } }
+        else { const local = (() => { try { return localStorage.getItem(tokenKey) || ''; } catch (e) { return ''; } })(); if (local) api.pushToken(local); }
+      } catch (e) { status('Sync error: ' + e.message); }
+    }
+    function applyRemotePlan(remote, initial) {
+      if (!remote) { if (initial && P) api.pushPlan(true); return; }
+      if (remote.client === client && !initial) return;
+      const localUpdated = (P && P.updated) || 0;
+      if (remote.updated > localUpdated) {
+        const plan = remote.plan ? JSON.parse(remote.plan) : null;
+        if (plan && D.me && plan.base_gw !== D.me.picks_gw) { return; }  // stale plan from before a new confirmed squad
+        P = plan; pendingSwap = null; savePlan(true);
+        renderTeam(); renderPlayers();
+        status(`Sync: plan updated ${relTime(new Date(remote.updated).toISOString())} from another device`);
+      } else if (initial && localUpdated > (remote.updated || 0)) api.pushPlan(true);
+    }
+    api.pushPlan = (now) => {
+      if (!user || !ready && !now) return;
+      clearTimeout(pushTimer);
+      const doIt = () => docRef('plan').set({ plan: P ? JSON.stringify(P) : null, updated: (P && P.updated) || Date.now(), client, base_gw: P ? P.base_gw : null }).catch((e) => status('Sync save failed: ' + e.message));
+      if (now) doIt(); else pushTimer = setTimeout(doIt, 600);
+    };
+    api.pushSettings = (now) => {
+      if (!user || !ready && !now) return;
+      S.updated = Date.now();
+      clearTimeout(settingsTimer);
+      const values = { xh: S.xh, horizon: S.horizon, sort: S.sort, dir: S.dir, avail: S.avail, mine: S.mine, pos: S.pos };
+      const doIt = () => docRef('settings').set({ values, updated: S.updated }).catch(() => {});
+      if (now) doIt(); else settingsTimer = setTimeout(doIt, 1000);
+    };
+    api.pushToken = (tok) => { api.token = tok; if (user) docRef('secrets').set({ gh: tok }).catch((e) => status('Sync save failed: ' + e.message)); };
+    return api;
+  })();
 
   load();
 })();
