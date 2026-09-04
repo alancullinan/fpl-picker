@@ -101,10 +101,15 @@ positional rate scaled by price) with the prior worth 900 minutes. Fixture multi
 attack 1 + (3 - FDR) × 0.12, concede 1 + (FDR - 3) × 0.15, home ±5% attack and ±8% concede.
 Doubles add, blanks give 0.
 
-Minutes: each player's recent fixtures (most recent weighted 1, each older one ×0.75) give a
+Minutes: each player's recent fixtures (most recent weighted 1, each older one ×0.55) give a
 start probability, a substitute-appearance probability, typical minutes for each, and the
 chance of reaching 60. A prior start rate from last season counts as half a fixture, so two
-starts already outweigh a backup role last year. Per-90
+starts already outweigh a backup role last year.
+
+Set-piece duty (penalties, corners, direct free kicks) is carried in the bundle as `pen`, `sp`
+and `fk` and shown in the site, but it is NOT in the model: adding it to the prior improved
+2025/26 and made 2024/25 worse, so it was left off. Mention it as context when recommending a
+player, never as an xP input. Per-90
 rates scale by expected minutes, so a habitual 20-minute substitute is valued as such.
 FPL's availability flag multiplies everything. The bundle exposes `p_play`, `p_60`, `xmin`
 (expected minutes) and `recent` (last six fixtures' minutes) per player.

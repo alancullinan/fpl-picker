@@ -36,14 +36,27 @@ PARAMS = {
     "p60_cap": 0.95,
     # Recent-minutes model (used when a player's fixture history is available)
     "minutes_model": 1,       # 1 = recency-weighted fixture history, 0 = season totals
-    "min_decay": 0.75,        # weight of each older fixture relative to the next newer one
+    "min_decay": 0.55,        # weight of each older fixture relative to the next newer one
+                              # (0.55 beats 0.75 on rank correlation and RMSE in all three
+                              # backtested seasons; recent games say most about selection)
     "min_prior_w": 0.5,       # prior start rate counts as this many fixtures (backtested: best rank corr, full and early season)
     "p60_sub": 0.05,          # chance a substitute appearance reaches 60 minutes
     "mins_sub": 20.0,         # default minutes for a substitute appearance
     "mins_start": 85.0,       # default minutes for a start
     "p60_start": 0.9,         # default chance a start reaches 60 minutes
     "unseen_start": 0.35,     # prior start rate with no history at all
-    "prev_shrink": 0.0,       # minutes of positional prior blended into last season's rates (0 = off)
+    "prev_shrink": 0.0,       # minutes of positional prior blended into last season's rates (0 = off;
+                              # tested at 450-1800, improved 2025/26 only and hurt the mean)
+    # Set-piece duty. A penalty is worth about 0.79 xG and a team wins roughly
+    # 0.13 a game, so first choice on penalties is about 0.10 xG per 90. This
+    # adjusts the PRIOR, not the observed rate: a player's own xG already
+    # contains the penalties he has taken, so the uplift fades as data arrives.
+    # Tested at 0.05-0.25 and left OFF: a gain on 2025/26 reversed on 2024/25,
+    # so it was noise. Set-piece duty is shown in the site as information
+    # instead. Re-test with --all before turning either on.
+    "pen_xg": 0.0,            # extra xG per 90 in the prior for the first-choice taker
+    "pen_xg_second": 0.0,     # same for second choice
+    "sp_xa": 0.0,             # extra xA per 90 in the prior for the first-choice corner/free-kick taker
     # Predicted lineups (Rotowire): how far to move the start probability
     "lineup_w": 0.7,          # weight of a predicted lineup vs the minutes history
     "lineup_w_confirmed": 0.95,
@@ -53,27 +66,48 @@ PARAMS = {
 }
 
 
-def make_prior(pos, price, median_price, prev, P=PARAMS):
-    """Per-90 prior rates: last season's if the sample is big enough, else positional × price."""
+def _order(v):
+    """Set-piece order as an int; the API uses null for 'not on them'."""
+    try:
+        return int(float(v))
+    except (TypeError, ValueError):
+        return 0
+
+
+def make_prior(pos, price, median_price, prev, P=PARAMS, pen_order=None, sp_order=None):
+    """Per-90 prior rates: last season's if the sample is big enough, else positional × price.
+
+    pen_order / sp_order are the player's CURRENT set-piece ranks (1 = first
+    choice). They lift the prior, so a newly appointed taker is not judged
+    solely on a history without penalties.
+    """
     scale = price / median_price if median_price else 1.0
     pmin = float(prev.get("minutes") or 0) if prev else 0.0
     if prev and pmin >= P["prev_min_minutes"]:
         g = pmin / 90.0
         k = P["prev_shrink"] / 90.0  # positional prior worth this many games
         pos_xg, pos_xa = PRIOR_XG[pos] * scale ** 1.5, PRIOR_XA[pos] * scale ** 1.2
+        pen = _pen_uplift(pen_order, P)
+        sp = P["sp_xa"] if _order(sp_order) == 1 else 0.0
         return {
-            "xg": (float(prev.get("expected_goals") or 0) + pos_xg * k) / (g + k),
-            "xa": (float(prev.get("expected_assists") or 0) + pos_xa * k) / (g + k),
+            "xg": (float(prev.get("expected_goals") or 0) + (pos_xg + pen) * k) / (g + k) + pen,
+            "xa": (float(prev.get("expected_assists") or 0) + (pos_xa + sp) * k) / (g + k) + sp,
             "dc": (float(prev.get("defensive_contribution") or 0) + PRIOR_DC[pos] * k) / (g + k),
             "saves": (float(prev.get("saves") or 0) + PRIOR_SAVES[pos] * k) / (g + k),
             "bonus": (float(prev.get("bonus") or 0) + min(1.0, 0.15 * scale ** 2) * k) / (g + k), "src": "prev",
             "start": min(1.0, float(prev.get("starts") or 0) / 38.0),
         }
     return {
-        "xg": PRIOR_XG[pos] * scale ** 1.5, "xa": PRIOR_XA[pos] * scale ** 1.2,
+        "xg": PRIOR_XG[pos] * scale ** 1.5 + _pen_uplift(pen_order, P),
+        "xa": PRIOR_XA[pos] * scale ** 1.2 + (P["sp_xa"] if _order(sp_order) == 1 else 0.0),
         "dc": PRIOR_DC[pos], "saves": PRIOR_SAVES[pos], "bonus": min(1.0, 0.15 * scale ** 2), "src": "price",
         "start": P["unseen_start"],
     }
+
+
+def _pen_uplift(pen_order, P):
+    o = _order(pen_order)
+    return P["pen_xg"] if o == 1 else P["pen_xg_second"] if o == 2 else 0.0
 
 
 def shrink(obs_total, obs_minutes, prior_rate, P=PARAMS):

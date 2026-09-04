@@ -13,10 +13,15 @@ Limits: availability (injury flags, news) is not recorded historically, so
 every variant is scored blind to it. The absolute numbers are therefore lower
 than live accuracy; the comparison between variants is what matters.
 
+A single season is not enough to judge a change: gains of half a point of
+best-XI on one season routinely reverse on another. --all scores every season
+listed in SEASONS and reports the mean, which is the gate a change must pass.
+
 Usage:
-  python3 pipeline/backtest.py --season 2025-26 --prior 2024-25 --fetch
-  python3 pipeline/backtest.py --season 2025-26 --prior 2024-25 --out data/backtest.json
-  python3 pipeline/backtest.py --set att_fdr=0.2 --set prior_minutes=600   # try other parameters
+  python3 pipeline/backtest.py --all --fetch                 # first time
+  python3 pipeline/backtest.py --all                         # the gate
+  python3 pipeline/backtest.py --all --set att_fdr=0.2       # try a parameter
+  python3 pipeline/backtest.py --season 2025-26 --prior 2024-25 --last 10   # one window
 """
 import argparse
 import csv
@@ -30,6 +35,8 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import model  # noqa: E402
 
 VAASTAV = "https://raw.githubusercontent.com/vaastav/Fantasy-Premier-League/master/data"
+# (season, prior season) pairs scored by --all.
+SEASONS = [("2023-24", "2022-23"), ("2024-25", "2023-24"), ("2025-26", "2024-25")]
 POS_ID = {"GKP": 1, "GK": 1, "DEF": 2, "MID": 3, "FWD": 4}
 SLOTS = {1: 1, 2: 4, 3: 4, 4: 2}  # a 4-4-2 "best XI" for scoring
 
@@ -186,7 +193,13 @@ def run(rows, fx_by_gw, teams, raw, prior_by_code, P, first_gw=2, last_gw=38):
                 st = state.get(e) or {"pos": p, "mins": 0.0, "starts": 0.0, "xg": 0.0, "xa": 0.0, "dc": 0.0, "saves": 0.0, "bonus": 0.0, "xgc": 0.0, "pts": 0.0, "games": 0, "recent": []}
                 st = dict(st, pos=p, team_games=team_games[r["_team"]], chance=1.0, status="a")
                 code = int(f(raw.get(e, {}).get("code"), -1))
-                prior = model.make_prior(p, f(r["value"], 50), median_price.get(p, 50), prior_by_code.get(code), P)
+                # Set-piece order comes from the PREVIOUS season's snapshot, which
+                # was known at the time. The live model uses the current order, so
+                # the backtest understates this signal rather than flattering it.
+                pv = prior_by_code.get(code) or {}
+                prior = model.make_prior(p, f(r["value"], 50), median_price.get(p, 50), pv, P,
+                                         pen_order=pv.get("penalties_order"),
+                                         sp_order=pv.get("corners_and_indirect_freekicks_order"))
                 fxs = fixtures_this.get(r["_team"], [])
                 totals, _, _, _ = model.player_xp(st, prior, [fxs], lam.get(r["_team"], P["league_xgc"]), P)
                 preds[e] = totals[0]
@@ -248,6 +261,7 @@ def main():
     ap.add_argument("--first", type=int, default=2)
     ap.add_argument("--last", type=int, default=38)
     ap.add_argument("--set", action="append", default=[], metavar="KEY=VALUE", help="override a model parameter")
+    ap.add_argument("--all", action="store_true", help="score every season in SEASONS and report the mean")
     a = ap.parse_args()
     params = dict(model.PARAMS)
     for kv in a.set:
@@ -255,30 +269,44 @@ def main():
         if k not in params:
             sys.exit(f"unknown parameter {k}; known: {', '.join(params)}")
         params[k] = float(v)
+    pairs = SEASONS if a.all else [(a.season, a.prior)]
     if a.fetch:
-        fetch(a.season, a.root)
-        if a.prior:
-            fetch(a.prior, a.root)
-    rows, fx, teams, raw = load_season(a.root, a.season)
-    prior = load_prior(a.root, a.prior)
-    results, per_gw = run(rows, fx, teams, raw, prior, params, a.first, a.last)
-    summary = summarise(results)
+        for season, prior in pairs:
+            fetch(season, a.root)
+            if prior:
+                fetch(prior, a.root)
+
     cols = ["spearman", "rmse", "xi", "captain_pts", "captain_top5", "top50"]
     changed = {k: v for k, v in params.items() if v != model.PARAMS[k]}
-    print(f"\n{a.season}: {summary['model']['gameweeks']} gameweeks scored, prior {a.prior or 'none'}" + (f", overrides {changed}" if changed else "") + "\n")
-    print(f"{'variant':10}" + "".join(f"{c:>13}" for c in cols))
-    for name in ("model", "vaastav_xp", "form"):
-        s = summary[name]
-        print(f"{name:10}" + "".join(f"{s[c]:13.3f}" for c in cols))
-    print("\nvaastav_xp: the dataset's own expected-points column; form: season points per game")
+    print("\noverrides: " + (str(changed) if changed else "none (defaults)"))
+    print(f"\n{'season':12}{'variant':12}" + "".join(f"{c:>13}" for c in cols))
+    per_season, all_out = {}, {}
+    for season, prior_season in pairs:
+        rows, fx, teams, raw = load_season(a.root, season)
+        prior = load_prior(a.root, prior_season)
+        results, per_gw = run(rows, fx, teams, raw, prior, params, a.first, a.last)
+        summary = summarise(results)
+        per_season[season] = summary
+        all_out[season] = {"prior": prior_season, "summary": summary, "per_gw": per_gw}
+        for name in ("model", "vaastav_xp", "form") if not a.all else ("model",):
+            sm = summary[name]
+            print(f"{season:12}{name:12}" + "".join(f"{sm[c]:13.3f}" for c in cols))
+    if len(pairs) > 1:
+        mean = {c: sum(per_season[s]["model"][c] for s in per_season) / len(per_season) for c in cols}
+        print(f"{'MEAN':12}{'model':12}" + "".join(f"{mean[c]:13.3f}" for c in cols))
+        print("\nA change ships only if the MEAN improves; a gain on one season alone is noise.")
+    else:
+        print("\nvaastav_xp: the dataset's own expected-points column; form: season points per game")
     print("spearman: rank correlation of predicted vs actual (higher is better)")
     print("rmse: points error per player; xi: actual points of the predicted best 1-4-4-2")
     print("captain_pts: actual points of the predicted top player; captain_top5: how often that player was in the actual top 5")
     print("top50: mean actual points of the 50 highest predictions")
+    print("\nThe replay cannot see injury flags or predicted lineups, which the live")
+    print("model does, so absolute numbers understate live accuracy.")
     if a.out:
         os.makedirs(os.path.dirname(a.out) or ".", exist_ok=True)
         with open(a.out, "w", encoding="utf-8") as fh:
-            json.dump({"season": a.season, "prior": a.prior, "params": params, "summary": summary, "per_gw": per_gw}, fh, separators=(",", ":"))
+            json.dump({"params": params, "seasons": all_out}, fh, separators=(",", ":"))
         print(f"\nwrote {a.out}")
 
 

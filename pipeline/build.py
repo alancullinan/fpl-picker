@@ -127,7 +127,9 @@ def build(raw, out):
         starts = fnum(p.get("starts"))
 
         pr = prev.get(p["code"])
-        prior = model.make_prior(pos, p["now_cost"], median_price[pos], pr, P)
+        prior = model.make_prior(pos, p["now_cost"], median_price[pos], pr, P,
+                                 pen_order=p.get("penalties_order"),
+                                 sp_order=p.get("corners_and_indirect_freekicks_order"))
         chance = p.get("chance_of_playing_next_round")
         state = {
             "pos": pos, "mins": mins, "starts": starts, "team_games": team_games,
@@ -191,6 +193,9 @@ def build(raw, out):
             "p_60": round(p_60, 2),
             "xmin": int(round(exp_frac * 90)),
             "recent": [int(r[1]) for r in rows[-6:]],
+            "pen": model._order(p.get("penalties_order")) or None,
+            "sp": model._order(p.get("corners_and_indirect_freekicks_order")) or None,
+            "fk": model._order(p.get("direct_freekicks_order")) or None,
             "lineup": lineup,
             "inj_tag": inj_tag.get(p["id"]),
             "xp1": xp1,

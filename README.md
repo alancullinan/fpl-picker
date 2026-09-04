@@ -20,15 +20,17 @@ by hand. The rules it encodes are written up in `.claude/skills/fpl/SKILL.md`.
 
 ## Measuring the model
 
-`pipeline/backtest.py` replays a finished season one deadline at a time, rebuilding what the
+`pipeline/backtest.py` replays finished seasons one deadline at a time, rebuilding what the
 model would have known and scoring its next-gameweek prediction against actual points. Two
 baselines are scored the same way: season points per game, and the xP column of the Vaastav
-dataset. Every change to the model should be justified by this before it ships.
+dataset. Every change to the model must improve the mean across all three seasons before it
+ships; single-season gains have repeatedly turned out to be noise.
 
 ```
-python3 pipeline/backtest.py --season 2025-26 --prior 2024-25 --fetch   # first time
-python3 pipeline/backtest.py --set att_fdr=0.2                          # try a parameter
-python3 pipeline/backtest.py --out data/backtest.json                   # record the result
+python3 pipeline/backtest.py --all --fetch          # first time
+python3 pipeline/backtest.py --all                  # the gate
+python3 pipeline/backtest.py --all --set att_fdr=0.2
+python3 pipeline/backtest.py --all --out data/backtest.json
 ```
 
 Metrics: rank correlation between predicted and actual points, RMSE, actual points of the

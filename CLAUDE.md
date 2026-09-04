@@ -21,8 +21,9 @@ Pages from the `main` branch root.
   deadline", with every tunable in `PARAMS`. Shared by build and backtest.
 - `pipeline/build.py`: raw into `data/fpl.json`, the single bundle the site reads, plus a
   prediction snapshot in `data/history/gwNN.json`. Standard library only.
-- `pipeline/backtest.py`: replays a past season from the Vaastav mirror and scores the model
-  against baselines; `--set key=value` tries parameter changes. Writes `data/backtest.json`.
+- `pipeline/backtest.py`: replays past seasons from the Vaastav mirror and scores the model
+  against baselines; `--all` scores three seasons and reports the mean, `--set key=value` tries
+  parameter changes. Writes `data/backtest.json`.
 - `index.html`, `app.js`, `styles.css`: the site. Three views: My Team, Players, Fixtures.
 - `.github/workflows/update-data.yml`: runs fetch and build daily at 06:00 UTC, every three
   hours when the next deadline (read from the committed bundle) is within 36 hours, on request,
@@ -37,8 +38,9 @@ Pages from the `main` branch root.
 - The FPL API is unofficial and undocumented. Handle missing keys defensively; `fetch.py` treats
   a missing entry as non-fatal so the player data still refreshes.
 - The model in `model.py` must stay explainable: every term is one line, every input is in the
-  bundle. Any change to it, coefficients included, is justified by a backtest run: quote the
-  before and after rank correlation and best-XI points in the commit message.
+  bundle. Any change to it, coefficients included, is justified by `backtest.py --all`: the
+  MEAN across seasons must improve, and the commit message quotes before and after. Do not ship
+  on a single season's result - several apparent gains reversed on another season.
 - Bump the `?v=` query on `app.js` and `styles.css` in `index.html` when changing them; GitHub
   Pages caches aggressively.
 - Team advice must respect the rules in the skill: squad shape, 3 per club, budget, hits, chips.
