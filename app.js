@@ -15,6 +15,8 @@
   const fit = (p) => p.status === 'a' || (p.chance != null && p.chance >= 75);
   // Expected points over the next n gameweeks (the bundle carries 8 per player).
   const xpN = (p, n) => (p.xp_gw || []).slice(0, n).reduce((a, b) => a + b, 0);
+  // Same, assuming the player plays every minute: the "if he plays" view.
+  const xpFullN = (p, n) => (p.xp_full || p.xp_gw || []).slice(0, n).reduce((a, b) => a + b, 0);
   const xh = () => S.xh;
 
   let D = null;
@@ -319,14 +321,14 @@
     seg.innerHTML = [1, 3, 5, 8].map((k) => `<button data-n="${k}" class="${k === n ? 'active' : ''}">${k} GW${k === 1 ? '' : 's'}</button>`).join('');
     seg.querySelectorAll('button').forEach((b) => b.addEventListener('click', () => { S.xh = Number(b.dataset.n); persist(); renderTeam(); renderPlayers(); }));
     const rows = [...list].sort((a, c) => xpN(c.p, n) - xpN(a.p, n));
-    const head = ['Player', 'xP' + n].concat(Array.from({ length: n }, (_, i) => 'GW' + (D.next_gw + i)));
+    const head = ['Player', 'xP' + n, 'if plays', '60+'].concat(Array.from({ length: n }, (_, i) => 'GW' + (D.next_gw + i)));
     const body = rows.map((x) => {
       const p = x.p, t = teamOf(p);
       const cells = Array.from({ length: n }, (_, i) => {
         const g = t.fixtures[i] || [];
         return `<td>${g.length ? g.map(fxChip).join('') : fxChip(null)}<span class="sub x">${num(p.xp_gw[i])}</span></td>`;
       }).join('');
-      return `<tr class="clickable${x.slot > 11 ? ' benchrow' : ''}" data-id="${p.id}"><td class="name">${luDot(p)}${esc(p.name)}${x.c ? ' <b>(C)</b>' : x.vc ? ' <span class="muted">(V)</span>' : ''} ${flag(p)}<span class="sub">${esc(t.short)} · ${POS[p.pos]}${x.slot > 11 ? ' · bench' : ''}</span></td><td class="x">${num(xpN(p, n))}</td>${cells}</tr>`;
+      return `<tr class="clickable${x.slot > 11 ? ' benchrow' : ''}" data-id="${p.id}"><td class="name">${luDot(p)}${esc(p.name)}${x.c ? ' <b>(C)</b>' : x.vc ? ' <span class="muted">(V)</span>' : ''} ${flag(p)}<span class="sub">${esc(t.short)} · ${POS[p.pos]}${x.slot > 11 ? ' · bench' : ''}</span></td><td class="x">${num(xpN(p, n))}</td><td>${num(xpFullN(p, n))}</td><td>${Math.round((p.p_60 ?? p.p_play) * 100)}%</td>${cells}</tr>`;
     }).join('');
     $('#outlook').innerHTML = `<table class="data outlook"><thead><tr>${head.map((h) => `<th>${h}</th>`).join('')}</tr></thead><tbody>${body}</tbody></table>`;
     $('#outlook').querySelectorAll('tr[data-id]').forEach((tr) => tr.addEventListener('click', () => openPlayer(byId.get(Number(tr.dataset.id)))));
@@ -473,7 +475,10 @@
   let COLS = [];
   function buildCols() {
     const n = xh();
-    COLS = [...BASE_COLS, { k: 'xpn', l: 'xP' + n, x: true, v: (p) => xpN(p, n) }];
+    COLS = [...BASE_COLS,
+      { k: 'xpn', l: 'xP' + n, x: true, v: (p) => xpN(p, n) },
+      { k: 'xpfull', l: 'if plays', v: (p) => xpFullN(p, n) },
+      { k: 'p60', l: '60+ %', v: (p) => Math.round((p.p_60 ?? p.p_play) * 100), f: (v) => v + '%' }];
     for (let i = 0; i < n; i++) COLS.push({ k: 'gw' + i, l: 'GW' + (D.next_gw + i), gw: i, v: (p) => p.xp_gw[i] || 0 });
   }
   const colVal = (c, p) => (c.v ? c.v(p) : p[c.k]);
@@ -505,7 +510,7 @@
       tr.innerHTML = COLS.map((c) => {
         if (c.k === 'name') return `<td class="name">${luDot(p)}${esc(p.name)} ${flag(p)}<span class="sub">${esc(teamOf(p).short)} · ${POS[p.pos]}</span></td>`;
         if (c.gw != null) { const g = teamOf(p).fixtures[c.gw] || []; return `<td>${g.length ? g.map(fxChip).join('') : fxChip(null)}<span class="sub x">${num(p.xp_gw[c.gw])}</span></td>`; }
-        return `<td class="${c.x ? 'x' : ''}">${c.f ? c.f(p[c.k]) : num(colVal(c, p))}</td>`;
+        return `<td class="${c.x ? 'x' : ''}">${c.f ? c.f(colVal(c, p)) : num(colVal(c, p))}</td>`;
       }).join('');
       tr.addEventListener('click', () => openPlayer(p));
       tb.appendChild(tr);
@@ -581,6 +586,7 @@
       <div class="kv">
         <span class="k">Next GW xP</span><span><b>${num(p.xp1)}</b> (FPL's own ep ${num(p.ep_next)})</span>
         <span class="k">Next 5 xP</span><span><b>${num(p.xp5)}</b></span>
+        <span class="k">If he plays 90</span><span>${num((p.xp_full || p.xp_gw)[0])} next GW · ${num(xpFullN(p, 5))} next 5</span>
         <span class="k">Lineup</span><span>${luDot(p)} ${luText(p) || '<span class="muted">no lineup data</span>'}</span>
         <span class="k">Minutes</span><span>${Math.round(p.p_play * 100)}% to play, ${Math.round((p.p_60 ?? p.p_play) * 100)}% for 60+, ${p.xmin != null ? p.xmin + ' expected' : ''}${p.chance != null ? ' · FPL flag ' + p.chance + '%' : ''}${p.recent && p.recent.length ? '<br><span class="muted">last ' + p.recent.length + ': ' + p.recent.join(', ') + ' min</span>' : ''}</span>
         <span class="k">Season</span><span>${p.pts} pts · ${p.min} min · ${p.g}G ${p.a}A ${p.cs}CS · ${p.bonus} bonus</span>

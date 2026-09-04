@@ -146,6 +146,8 @@ def build(raw, out):
         fixtures_by_gw = [fx_list.get(gw, []) for gw in range(next_id, next_id + HORIZON)] if next_id else []
         gw_xp, parts1, r, p_play = model.player_xp(state, prior, fixtures_by_gw, team_xgc[p["team"]], P)
         _, p_60, exp_frac = model.minutes_probs(dict(state, prior_start=prior.get("start", P["unseen_start"])), P)
+        gw_full, _, _, _ = model.player_xp(state, prior, fixtures_by_gw, team_xgc[p["team"]], P, full=True)
+        gw_full = [round(v, 2) for v in gw_full]
         gw_xp = [round(v, 2) for v in gw_xp]
         parts1 = {k: round(v, 2) for k, v in parts1.items()}
         xp1 = gw_xp[0] if gw_xp else 0.0
@@ -194,6 +196,7 @@ def build(raw, out):
             "xp1": xp1,
             "xp5": xp5,
             "xp_gw": gw_xp,
+            "xp_full": gw_full,
             "parts": parts1,
             "tin": int(fnum(p.get("transfers_in_event"))),
             "tout": int(fnum(p.get("transfers_out_event"))),

@@ -185,19 +185,20 @@ def fixture_xp(pos, r, p_play, p_60, lam_team, fx, P=PARAMS, frac=None):
     return {"app": appearance, "att": attack, "cs": cs + conceded, "dc": defcon, "sv": saves, "bon": bonus}
 
 
-def player_xp(state, prior, fixtures_by_gw, lam_team, P=PARAMS):
+def player_xp(state, prior, fixtures_by_gw, lam_team, P=PARAMS, full=False):
     """Return (per-gameweek totals, component breakdown of the first gameweek, rates, p_play).
 
     fixtures_by_gw: list over upcoming gameweeks, each a list of {fdr, home}
-    (empty for a blank, two for a double).
+    (empty for a blank, two for a double). With full=True the player is assumed
+    to play every minute of every fixture: the "if he plays" view.
     """
     r = rates(state, prior, P)
     if "prior_start" not in state:
         state = dict(state, prior_start=prior.get("start", P["unseen_start"]))
-    p_play, p_60, frac = minutes_probs(state, P)
+    p_play, p_60, frac = (1.0, 1.0, 1.0) if full else minutes_probs(state, P)
     totals, parts1 = [], {}
     for i, fxs in enumerate(fixtures_by_gw):
-        pp, p6, fr = (p_play, p_60, frac) if i == 0 else minutes_probs(state, P, ahead=i)
+        pp, p6, fr = (p_play, p_60, frac) if (i == 0 or full) else minutes_probs(state, P, ahead=i)
         total = 0.0
         for fx in fxs:
             parts = fixture_xp(state["pos"], r, pp, p6, lam_team, fx, P, fr)
