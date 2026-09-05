@@ -373,3 +373,23 @@ details.details[open] summary::before { content: "▾ "; }
 }
 .conf { font-size: 12px; margin-right: 2px; vertical-align: middle; }
 .conf.low { color: var(--warn); } .conf.med { color: var(--ink-faint); }
+
+/* ---------- the weekly briefing ---------- */
+.brief { border-left: 3px solid var(--accent); }
+.brief-headline { font-family: var(--display); font-size: 19px; line-height: 1.3; margin: 0 0 12px; text-wrap: balance; }
+.brief-group { margin-top: 12px; }
+.brief-group h3 {
+  font-family: var(--display); font-size: 12.5px; letter-spacing: .09em; text-transform: uppercase;
+  color: var(--ink-dim); margin: 0 0 6px; font-weight: 600;
+}
+.brief-item { background: var(--raised); border-radius: var(--radius-sm); padding: 9px 11px; margin-bottom: 6px; }
+.brief-item .act { font-weight: 600; }
+.brief-item .why { color: var(--ink-dim); font-size: 13px; margin-top: 3px; }
+.brief-item.do { box-shadow: inset 3px 0 0 var(--good); }
+.brief-item.consider { box-shadow: inset 3px 0 0 var(--warn); }
+.brief-item.ignore { box-shadow: inset 3px 0 0 var(--line); opacity: .82; }
+.conf-dot { display: inline-block; font-size: 10px; margin-left: 6px; vertical-align: middle; }
+.conf-dot.high { color: var(--good); } .conf-dot.medium { color: var(--warn); } .conf-dot.low { color: var(--ink-faint); }
+.brief-risks { font-size: 12.5px; color: var(--ink-dim); margin: 10px 0 0; padding-left: 18px; }
+.brief-risks li { margin-bottom: 3px; }
+.brief-stale { color: var(--warn); }

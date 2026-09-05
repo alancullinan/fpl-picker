@@ -23,6 +23,10 @@ Pages from the `main` branch root.
   deadline", with every tunable in `PARAMS`. Shared by build and backtest.
 - `pipeline/build.py`: raw into `data/fpl.json`, the single bundle the site reads, plus a
   prediction snapshot in `data/history/gwNN.json`. Standard library only.
+- `pipeline/briefing.py`: asks Claude for the week's advice from the built bundle plus the FPL
+  skill, and writes `data/briefing.json`. Advice only - nothing it produces feeds expected
+  points. `--dry-run` prints the prompt without calling the API. Needs the ANTHROPIC_API_KEY
+  repository secret; without it the workflow step is skipped.
 - `pipeline/sweep.py`: runs every model parameter over a grid through the backtest and prints
   three-season deltas against the current default. Run it before claiming a coefficient is right.
 - `pipeline/backtest.py`: replays past seasons from the Vaastav mirror and scores the model
@@ -37,7 +41,9 @@ Pages from the `main` branch root.
 
 ## Rules of the road
 
-- Keep both pipeline scripts dependency-free; the Action runs on a bare runner.
+- Keep the DATA pipeline (fetch, build, model, backtest) dependency-free, so a refresh always
+  runs on a bare runner. `briefing.py` is the one exception: it needs `anthropic`, is installed
+  and run as a separate optional step, and must never be able to block a data refresh.
 - Never commit `data/raw/`. Commit `data/fpl.json` only via the Action (or deliberately, to seed).
 - The FPL API is unofficial and undocumented. Handle missing keys defensively; `fetch.py` treats
   a missing entry as non-fatal so the player data still refreshes.

@@ -175,6 +175,7 @@
     renderPlayers();
     renderFixtures();
     showView(S.view);
+    loadBriefing();
     Sync.start();
     $('#generated').textContent = 'Data refreshed ' + relTime(D.generated) + ' (' + fmtDate(D.generated) + ').' + (D.lineups ? ` Predicted lineups: ${D.lineups.matches.length} matches from Rotowire.` : ' No predicted lineups in this refresh.')
       + (D.top ? ` Ownership sampled from ${D.top.sampled} squads in the top ${commas(D.top.ranks[1])}.` : '');
@@ -747,6 +748,55 @@
     setTimeout(poll, 20000);
   }
 
+
+  // ---------- the weekly briefing ----------
+  // Written by Claude in the pipeline from the same data the site shows, and
+  // read here as plain data. It is advice, not a number: nothing in it feeds
+  // expected points.
+  async function loadBriefing() {
+    let b;
+    try {
+      const r = await fetch('data/briefing.json?ts=' + Date.now(), { cache: 'no-store' });
+      if (!r.ok) return;
+      b = await r.json();
+    } catch (e) { return; }
+    if (!b || !b.briefing || b.gw !== D.next_gw) return;   // stale: written for an earlier deadline
+    const br = b.briefing;
+    const stale = new Date(D.generated) - new Date(b.data_generated) > 36e5;
+    $('#brief-meta').innerHTML = `GW${b.gw} · written ${relTime(b.generated)}`
+      + (stale ? ' <span class="brief-stale">· the data has refreshed since</span>' : '');
+    $('#brief-headline').textContent = br.headline || '';
+    const box = $('#brief-body'); box.innerHTML = '';
+    const dot = (c) => c ? `<span class="conf-dot ${c}" title="${c} confidence">●</span>` : '';
+    const group = (title, items, kind, withConf) => {
+      if (!items || !items.length) return;
+      const g = el('div', 'brief-group', `<h3>${title}</h3>`);
+      for (const it of items) {
+        g.appendChild(el('div', 'brief-item ' + kind,
+          `<div class="act">${esc(it.action)}${withConf ? dot(it.confidence) : ''}</div>`
+          + `<div class="why">${esc(it.why)}</div>`));
+      }
+      box.appendChild(g);
+    };
+    group('Do', br.do, 'do', true);
+    group('Consider', br.consider, 'consider', true);
+    group('Leave alone', br.ignore, 'ignore', false);
+    if (br.captain) {
+      box.appendChild(el('div', 'brief-group',
+        `<h3>Captain</h3><div class="brief-item do"><div class="act">${esc(br.captain.pick)}`
+        + `<span class="muted"> · or ${esc(br.captain.alternative)}</span></div>`
+        + `<div class="why">${esc(br.captain.why)}</div></div>`));
+    }
+    if (br.chips) {
+      box.appendChild(el('div', 'brief-group',
+        `<h3>Chips</h3><div class="brief-item ignore"><div class="why">${esc(br.chips)}</div></div>`));
+    }
+    if (br.risks && br.risks.length) {
+      box.appendChild(el('div', 'brief-group',
+        `<h3>What would make this wrong</h3><ul class="brief-risks">${br.risks.map((r) => `<li>${esc(r)}</li>`).join('')}</ul>`));
+    }
+    $('#brief').classList.remove('hidden');
+  }
 
   // ---------- multi-week transfer solver ----------
   // Beam search over transfer sequences. At each gameweek a state may make

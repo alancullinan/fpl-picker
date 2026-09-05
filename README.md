@@ -75,6 +75,20 @@ squad itself sits in a collapsible reference below. The plan is kept in the brow
 budget, the three-per-club limit, formation and free transfers, and is cleared once FPL
 confirms a newer squad. It is a scratchpad; the transfers still have to be made in the FPL app.
 
+## The weekly briefing (optional)
+
+`pipeline/briefing.py` hands the built bundle and the FPL rules skill to Claude and asks for
+the judgement the numbers cannot make: whether a small expected gain is worth a differential
+risk, which suggestions rest on too little evidence, whether to bank the transfer. It writes
+`data/briefing.json`, which the site shows at the top of My Team.
+
+It runs as a separate workflow step and needs an `ANTHROPIC_API_KEY` repository secret
+(Settings, Secrets and variables, Actions). Without the secret the step is skipped and the
+site simply shows no briefing. About 7k input tokens a run, a few pence.
+
+The briefing is advice, never an input: nothing it says feeds expected points, for the same
+reason ownership does not. `--dry-run` prints the prompt without calling the API.
+
 ## Cross-device sync (optional)
 
 `firebase-config.js` holds a Firebase web config. With it set, the site offers Google sign-in
