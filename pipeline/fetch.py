@@ -92,7 +92,10 @@ def fetch_element_history(bootstrap, out, workers=8):
         if not d:
             return pid, None
         rows = sorted(d.get("history", []), key=lambda h: (h.get("round", 0), h.get("kickoff_time") or ""))
-        return pid, [[h.get("round"), h.get("minutes", 0), 1 if h.get("starts") else 0] for h in rows]
+        # The fixture id rides along so the build can tell a finished match from
+        # one being played right now: minutes tick up live, and a player on the
+        # pitch at half time reads as a 40-minute outing until the whistle.
+        return pid, [[h.get("round"), h.get("minutes", 0), 1 if h.get("starts") else 0, h.get("fixture")] for h in rows]
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as ex:
         for pid, rows in ex.map(one, wanted):

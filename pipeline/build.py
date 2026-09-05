@@ -51,6 +51,18 @@ def load_prev(raw):
     return prev
 
 
+def _row_played(row, finished_fx, finished_gws):
+    """Is this history row a completed fixture?
+
+    Rows carry [round, minutes, started, fixture_id]. Archived data from before
+    the fixture id was recorded falls back to the gameweek-level test, which is
+    safe there because those rounds are long finished.
+    """
+    if len(row) > 3 and row[3] is not None:
+        return row[3] in finished_fx
+    return row[1] > 0 or row[0] in finished_gws
+
+
 def build(raw, out):
     bs = load(raw, "bootstrap-static.json")
     fixtures = load(raw, "fixtures.json") or []
@@ -69,6 +81,10 @@ def build(raw, out):
 
     # Games played per team this season (finished fixtures).
     finished_gws = {e["id"] for e in events if e.get("finished")}
+    # Fixtures whose result is settled. finished_provisional flips at the final
+    # whistle and finished once bonus is confirmed; minutes do not change
+    # between the two, so either is enough to trust a history row.
+    finished_fx = {f["id"] for f in fixtures if f.get("finished") or f.get("finished_provisional")}
     played = {tid: 0 for tid in teams}
     for f in fixtures:
         if f.get("finished"):
@@ -171,14 +187,17 @@ def build(raw, out):
             "dc": fnum(p.get("defensive_contribution")), "saves": fnum(p.get("saves")), "bonus": fnum(p.get("bonus")),
         }
         # Most recent fixture first, as (minutes, started), for the minutes model.
-        # Once a deadline passes, FPL creates a history row for the new gameweek
-        # with zero minutes, before a ball is kicked. Treating that as evidence
-        # of being dropped would quietly demote every player in the game, so a
-        # blank from an unfinished gameweek is skipped; a blank from a finished
-        # one is real evidence and is kept, as are minutes already played in a
-        # gameweek still in progress.
+        # A row counts only once its own fixture has been played to the end.
+        # Two ways it can lie otherwise: once a deadline passes FPL creates a
+        # zero-minute row before a ball is kicked, which would read as being
+        # dropped; and during a match the minutes tick up live, so a player who
+        # is on the pitch at half time reads as a 40-minute outing. With
+        # min_decay weighting the newest fixture most heavily, that halved the
+        # projection of every player in a Saturday kick-off until full time.
+        # Fixture-level rather than gameweek-level, so a match finished on
+        # Saturday counts immediately instead of waiting for the round to end.
         rows = [r for r in (fixture_hist.get(str(p["id"])) or [])
-                if r[1] > 0 or r[0] in finished_gws]
+                if _row_played(r, finished_fx, finished_gws)]
         state["recent"] = [(r[1], bool(r[2])) for r in reversed(rows)][:12]
         lineup = lineup_of.get(p["id"]) or ("bench" if team_has_lineup.get(p["team"]) else None)
         state["lineup"] = lineup

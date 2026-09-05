@@ -60,6 +60,13 @@ Pages from the `main` branch root.
 - Never commit `data/raw/`. Commit `data/fpl.json` only via the Action (or deliberately, to seed).
 - The FPL API is unofficial and undocumented. Handle missing keys defensively; `fetch.py` treats
   a missing entry as non-fatal so the player data still refreshes.
+- A player's history row is evidence only once its own fixture has finished (`_row_played` in
+  `build.py`). FPL writes a zero-minute row at the deadline and then counts minutes up live
+  during the match, so an unguarded row says a player was dropped before kick-off and says he
+  was hooked at half time while he is still on the pitch. `min_decay` weights the newest fixture
+  hardest, so either reading moves projections a long way: a live 37-minute row took Haaland's
+  p_60 from 0.98 to 0.45. Test at the fixture level, never the gameweek, so Saturday's results
+  count on Saturday rather than waiting for the round to be marked finished.
 - The model in `model.py` must stay explainable: every term is one line, every input is in the
   bundle. Any change to it, coefficients included, is justified by `backtest.py --all`: the
   MEAN across seasons must improve, and the commit message quotes before and after. Do not ship
