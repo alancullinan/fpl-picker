@@ -103,6 +103,22 @@ role - and returns one structured signal per player. It runs only within 96 hour
 deadline. Signals are archived per gameweek in `data/news/`, shown in the site, and are
 **not** an input to expected points until they have been scored against actual minutes.
 
+## Ask (optional)
+
+`worker/` is a Cloudflare Worker that proxies questions to Claude. The site is public, so the
+API key cannot live in the browser; the Worker holds it, verifies the caller's Firebase sign-in
+against an allowlist of uids, and streams the answer back. That makes the Ask box on the Advice
+tab answer in seconds, where a GitHub Actions round trip takes minutes.
+
+Deploy it (`worker/README.md` has the three commands), put the URL in `firebase-config.js` as
+`window.FPL_WORKER`, and the box appears for anyone signed in. Leave it null and the app does
+not offer the feature. The model and a 4,000-token ceiling are fixed inside the Worker, so a
+compromised page cannot run up a bill: about 2p a question.
+
+Questions see the planned squad, the projections, ownership, evidence confidence, team news and
+the fixture list, built in the page from data it already has - nothing from the Python pipeline
+is duplicated.
+
 ## Cross-device sync (optional)
 
 `firebase-config.js` holds a Firebase web config. With it set, the site offers Google sign-in

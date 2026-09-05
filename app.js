@@ -176,6 +176,7 @@
     renderFixtures();
     showView(S.view);
     loadBriefing();
+    Ask.mount();
     Sync.start();
     $('#generated').textContent = 'Data refreshed ' + relTime(D.generated) + ' (' + fmtDate(D.generated) + ').' + (D.lineups ? ` Predicted lineups: ${D.lineups.matches.length} matches from Rotowire.` : ' No predicted lineups in this refresh.')
       + (D.top ? ` Ownership sampled from ${D.top.sampled} squads in the top ${commas(D.top.ranks[1])}.` : '')
@@ -779,6 +780,138 @@
   }
 
 
+
+  // ---------- ask ----------
+  // Questions go to a Cloudflare Worker that holds the API key and checks the
+  // caller is signed in as the owner; the answer streams back in seconds. The
+  // context is built here from what the page already has, so nothing in the
+  // Python pipeline is duplicated.
+  const Ask = (() => {
+    const history = [];   // [{role, content}] for this page session only
+    let busy = false;
+
+    function squadContext() {
+      const me = D.me || {};
+      const t = (p) => teamOf(p).short;
+      const line = (p, extra) => {
+        const bits = [`${p.name} (${t(p)} ${POS[p.pos]}) £${p.price}m`,
+          `xP next ${num(p.xp1)}, next5 ${num(xpN(p, 5))}`, `${p.xmin}/90 min`];
+        if (p.town != null) bits.push(`owned ${p.sel}% overall, ${p.town}% top10k`);
+        if (p.conf === 'low') bits.push(`THIN EVIDENCE (${p.ev} min)`);
+        if (p.news) bits.push(`news: ${p.news}`);
+        if (p.news_sig) bits.push(`team news: ${p.news_sig.signal} — ${p.news_sig.note}`);
+        if (p.pen === 1) bits.push('first on penalties');
+        return '  ' + bits.concat(extra || []).join(' | ');
+      };
+      const list = picks();
+      const ch = planChanges();
+      const out = [
+        `Gameweek ${D.next_gw}, deadline ${D.deadline}. Data generated ${D.generated}.`,
+        `Bank £${me.bank}m, ${me.free_transfers} free transfer(s), rank ${commas(me.overall_rank)}.`,
+        `Chips used: ${(me.chips_used || []).map((c) => c.name + ' GW' + c.gw).join(', ') || 'none'}.`,
+        '', 'SQUAD (as currently planned):',
+      ];
+      list.sort((a, b) => a.slot - b.slot).forEach((x) => {
+        out.push(line(x.p, [x.slot <= 11 ? 'starting' : 'bench', x.c ? 'CAPTAIN' : x.vc ? 'vice' : '']. filter(Boolean)));
+      });
+      if (ch && ch.any) {
+        out.push('', 'PLANNED CHANGES not yet made in the FPL app:');
+        ch.swaps.forEach((sw) => out.push(`  out ${byId.get(sw.out).name} → in ${byId.get(sw.in).name}`));
+        if (ch.chip) out.push(`  chip: ${CHIP_NAME[ch.chip]}`);
+      }
+      const mine = new Set(list.map((x) => x.id));
+      const others = D.players.filter((p) => !mine.has(p.id) && p.p_play > 0.5)
+        .sort((a, b) => xpN(b, 5) - xpN(a, 5)).slice(0, 45);
+      out.push('', 'BEST PLAYERS NOT IN THE SQUAD (top 45 by xP over 5 gameweeks):');
+      others.forEach((p) => out.push(line(p)));
+      out.push('', 'FIXTURES (next 5, difficulty 1 easiest to 5 hardest):');
+      Object.values(D.teams).forEach((tm) => {
+        const fx = tm.fixtures.slice(0, 5).map((g) => g.length
+          ? g.map((f) => `${f.opp_short}${f.home ? '(H)' : '(A)'}${f.fdr}`).join('/') : 'blank').join(' ');
+        out.push(`  ${tm.short}: ${fx}`);
+      });
+      return out.join('\n');
+    }
+
+    const SYSTEM = () => `You are helping one manager with their Fantasy Premier League team. Answer the question they asked, briefly and in British English.
+
+Their squad and the model's numbers are below. Rules to follow:
+- Never invent a number. Every figure you quote must be in the data given.
+- xP is this project's expected-points model. Ownership is a RANK consideration, not a points one: a player most of the top 10k own is a risk you carry by not owning him.
+- A player marked THIN EVIDENCE is an extrapolation from very few minutes. Say so if you recommend or dismiss one.
+- Set-piece duty and team news are NOT in the xP figures; mention them as context that the numbers miss.
+- Be willing to say the numbers do not settle it, or that doing nothing is right.
+- Two or three short paragraphs at most. No headings, no bullet lists unless comparing options.
+
+=== THE RULES AND THE MODEL ===
+${D.rules || '(the full rules file is not loaded in the page; rely on standard FPL rules for 2026/27)'}
+
+=== THEIR SITUATION ===
+${squadContext()}`;
+
+    function bubble(cls, text) {
+      const el2 = el('div', 'msg ' + cls); el2.textContent = text;
+      $('#chat').appendChild(el2); el2.scrollIntoView({ block: 'nearest' });
+      return el2;
+    }
+
+    async function send(question) {
+      if (busy || !question.trim()) return;
+      busy = true;
+      const input = $('#ask-input'), btn = $('#ask-send');
+      input.value = ''; btn.disabled = true; input.disabled = true;
+      bubble('you', question);
+      const out = bubble('claude typing', '');
+      let idToken = null;
+      try { idToken = await Sync.idToken(); } catch (e) { /* handled below */ }
+      if (!idToken) {
+        out.className = 'msg err'; out.textContent = 'Sign in on the footer first — the assistant checks it is you before spending.';
+        busy = false; btn.disabled = false; input.disabled = false; return;
+      }
+      history.push({ role: 'user', content: question });
+      try {
+        const r = await fetch(window.FPL_WORKER, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ idToken, system: SYSTEM(), messages: history.slice(-8) }),
+        });
+        if (!r.ok) {
+          const e = await r.json().catch(() => ({}));
+          throw new Error(e.error || `HTTP ${r.status}`);
+        }
+        const reader = r.body.getReader(), dec = new TextDecoder();
+        let buf = '', answer = '';
+        for (;;) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buf += dec.decode(value, { stream: true });
+          const lines = buf.split('\n'); buf = lines.pop();
+          for (const ln of lines) {
+            if (!ln.startsWith('data:')) continue;
+            let ev; try { ev = JSON.parse(ln.slice(5).trim()); } catch (e) { continue; }
+            if (ev.type === 'content_block_delta' && ev.delta && ev.delta.type === 'text_delta') {
+              answer += ev.delta.text;
+              out.textContent = answer;
+              out.scrollIntoView({ block: 'nearest' });
+            }
+          }
+        }
+        out.className = 'msg claude';
+        if (!answer) { out.className = 'msg err'; out.textContent = 'No answer came back. Try again.'; }
+        else history.push({ role: 'assistant', content: answer });
+      } catch (e) {
+        out.className = 'msg err'; out.textContent = 'Could not ask: ' + e.message;
+      }
+      busy = false; btn.disabled = false; input.disabled = false; input.focus();
+    }
+
+    function mount() {
+      if (!window.FPL_WORKER || !D.me || !D.me.picks.length) return;
+      $('#ask-card').classList.remove('hidden');
+      $('#ask-form').addEventListener('submit', (e) => { e.preventDefault(); send($('#ask-input').value); });
+    }
+    return { mount, showUid: (uid) => { const e2 = $('#ask-uid'); if (e2) e2.textContent = uid ? 'uid ' + uid : ''; } };
+  })();
+
   // ---------- the weekly briefing ----------
   // Written by Claude in the pipeline from the same data the site shows, and
   // read here as plain data. It is advice, not a number: nothing in it feeds
@@ -1092,7 +1225,8 @@
     const client = Math.random().toString(36).slice(2);
     let fb = null, db = null, user = null, ready = false, unsub = null;
     let pushTimer = null, settingsTimer = null;
-    const api = { token: '', pushPlan() {}, pushSettings() {}, pushToken() {}, start() {} };
+    const api = { token: '', pushPlan() {}, pushSettings() {}, pushToken() {}, start() {},
+                  async idToken() { return user ? user.getIdToken() : null; } };
     if (!cfg) return api;
     const status = (msg) => { $('#sync-status').textContent = msg; };
     const loadScript = (src) => new Promise((res, rej) => { const el = document.createElement('script'); el.src = src; el.onload = res; el.onerror = () => rej(new Error('failed to load ' + src)); document.head.appendChild(el); });
@@ -1125,6 +1259,7 @@
         if (!u) { api.token = ''; status('Sync: not signed in. Plan is kept in this browser only.'); $('#sync-btn').textContent = 'Sign in to sync'; return; }
         $('#sync-btn').textContent = 'Sign out';
         status(`Sync: signed in as ${u.displayName || u.email}`);
+        Ask.showUid(u.uid);   // needed once, to lock the Worker to this account
         await pullAll();
         ready = true;
         unsub = docRef('plan').onSnapshot((snap) => applyRemotePlan(snap.data()));

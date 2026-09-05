@@ -1,0 +1,17 @@
+name = "fpl-picker-claude"
+main = "src/index.js"
+compatibility_date = "2026-09-01"
+
+[vars]
+# The public Firebase web key from firebase-config.js. Public by design: it
+# identifies the project, it does not grant anything.
+FIREBASE_API_KEY = "AIzaSyAu69XFVWzT5b1VNV4Qkx4K9bj5oM-4I4A"
+# Firebase uids allowed to spend against the API key. Fill this in after the
+# first sign-in (the app prints your uid in the Advice tab). Leave empty only
+# if you are happy for any signed-in Google account to use it.
+ALLOWED_UIDS = ""
+# Origins permitted to call the Worker.
+ALLOWED_ORIGINS = "https://alancullinan.github.io,http://localhost:8000,http://localhost:8765"
+
+# The API key is a secret, never a var:
+#   npx wrangler secret put ANTHROPIC_API_KEY

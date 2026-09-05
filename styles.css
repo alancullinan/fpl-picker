@@ -400,3 +400,20 @@ details.details[open] summary::before { content: "▾ "; }
 .tag.news.bad { background: var(--bad); color: #24090a; }
 .tab-dot { color: var(--accent); font-size: 8px; vertical-align: super; margin-left: 2px; }
 .brief .card-head .actions { align-items: center; gap: 8px; }
+
+/* ---------- ask ---------- */
+.chat { display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; }
+.chat:empty { display: none; }
+.msg { border-radius: var(--radius-sm); padding: 9px 11px; font-size: 14px; }
+.msg.you { background: var(--raised); align-self: flex-end; max-width: 88%; }
+.msg.claude { background: transparent; padding: 2px 0; }
+.msg.claude p { margin: 0 0 8px; }
+.msg.claude p:last-child { margin-bottom: 0; }
+.msg.err { color: var(--bad); }
+.askrow { display: flex; gap: 8px; }
+.askrow input {
+  flex: 1; min-width: 0; background: var(--surface); color: var(--ink);
+  border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 9px 11px;
+}
+.typing::after { content: "▍"; color: var(--accent); animation: blink 1s steps(2) infinite; }
+@keyframes blink { 50% { opacity: 0; } }
