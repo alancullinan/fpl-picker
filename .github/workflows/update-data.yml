@@ -4,9 +4,15 @@ name: Update FPL data
 # injury news, and every three hours once the next deadline is within 36 hours
 # so predicted lineups and press-conference news land in time. Also on request
 # (Actions tab or the site's Refresh button) and when the pipeline changes.
+#
+# Times are UTC, which is an hour behind Irish time from late March to late
+# October. GitHub also queues scheduled runs and has been observed starting
+# them anywhere from 20 minutes to over two hours late, and runs booked on the
+# hour wait longest, so the morning run is booked early and off the hour to
+# land before breakfast either side of the clock change.
 on:
   schedule:
-    - cron: "0 6 * * *"        # daily, 06:00 UTC
+    - cron: "37 3 * * *"       # 03:37 UTC = 04:37 Irish summer, 03:37 winter
     - cron: "0 */3 * * *"      # every 3 hours; skipped unless near a deadline
   workflow_dispatch:
   push:

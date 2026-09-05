@@ -54,7 +54,8 @@ the live model, availability flags included, can be scored once results are in.
 1. **Pages**: Settings, Pages, "Deploy from a branch", branch `main`, folder `/ (root)`.
 2. **Entry ID**: the pipeline defaults to entry `4853364`. To change it, add a repository
    variable `FPL_ENTRY_ID` (Settings, Secrets and variables, Actions, Variables).
-3. **Refreshing data**: the workflow runs every morning (06:00 UTC), and every three hours
+3. **Refreshing data**: the workflow runs every morning (03:37 UTC, early and off the hour
+   because GitHub queues scheduled runs and can start them hours late), and every three hours
    once the next deadline is within 36 hours so predicted lineups and press-conference news
    arrive in time. For anything in between, press "Run workflow" on the Actions tab or use the
    site's "Refresh data" button, which asks once for a fine-grained personal access token (this
