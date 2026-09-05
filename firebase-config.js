@@ -14,4 +14,4 @@ window.FPL_FIREBASE = {
 // Cloudflare Worker that proxies questions to Claude, so the API key never
 // reaches the browser. Deploy worker/ and paste the URL here to switch the
 // Ask box on; leave null and the app simply does not offer it.
-window.FPL_WORKER = null;
+window.FPL_WORKER = "https://fpl-picker-claude.alancullinan.workers.dev/";
