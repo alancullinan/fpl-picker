@@ -23,7 +23,7 @@ import os
 import sys
 from datetime import datetime, timezone
 
-MODEL = "claude-opus-5"
+MODEL = "claude-opus-5"   # advice only; nothing here feeds expected points
 TOP_PLAYERS = 60          # candidates offered beyond the user's own squad
 POS = {1: "GKP", 2: "DEF", 3: "MID", 4: "FWD"}
 
