@@ -182,7 +182,13 @@
       + (D.top ? ` Ownership sampled from ${D.top.sampled} squads in the top ${commas(D.top.ranks[1])}.` : '')
       + (D.news ? ` Team news: ${D.news.count} signals across ${D.news.checked.length} clubs, read ${relTime(D.news.generated)}.` : '');
   }
-  function note(msg) { const st = $('#status'); st.textContent = msg; st.classList.remove('hidden'); }
+  // The status line sits at the top of the page but most of the things that
+  // write to it are triggered from the footer, so scroll it into view: an
+  // error the user cannot see reads to them as nothing happening at all.
+  function note(msg) {
+    const st = $('#status'); st.textContent = msg; st.classList.remove('hidden');
+    try { st.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (e) { /* ignore */ }
+  }
 
   // ---------- helpers ----------
   function fmtDate(iso) {
@@ -756,6 +762,13 @@
         });
         if (r.ok) return;
         const e = await r.json().catch(() => ({}));
+        // The Worker is deployed by hand, so it can lag the repo. The refresh
+        // endpoint was added after the Ask box; a Worker without it falls
+        // through to the Ask handler and rejects a body carrying no messages.
+        // Say that, rather than repeating an error that means nothing here.
+        if (r.status === 400 && /no messages/i.test(e.error || '')) {
+          throw new Error('the Worker is running an older version that has no refresh endpoint. Copy worker/src/index.js from the repo into the Cloudflare editor and deploy.');
+        }
         // 501 means the Worker has no GitHub token yet: fall through to the
         // browser token rather than failing outright.
         if (r.status !== 501) throw new Error(e.error || `HTTP ${r.status}`);
