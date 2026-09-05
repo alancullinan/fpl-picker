@@ -24,6 +24,11 @@ import sys
 from datetime import datetime, timezone
 
 MODEL = "claude-opus-5"   # advice only; nothing here feeds expected points
+# Thinking tokens count against max_tokens. At effort "high" the reasoning on
+# this task runs to several thousand, so the budget has to leave room for the
+# answer as well - too small a value truncates the JSON mid-string. Streaming
+# keeps a long generation from hitting the client HTTP timeout.
+MAX_TOKENS = 32000
 TOP_PLAYERS = 60          # candidates offered beyond the user's own squad
 POS = {1: "GKP", 2: "DEF", 3: "MID", 4: "FWD"}
 
@@ -207,19 +212,23 @@ def main():
 
     client = anthropic.Anthropic()
     try:
-        resp = client.messages.create(
+        with client.messages.stream(
             model=MODEL,
-            max_tokens=8000,
+            max_tokens=MAX_TOKENS,
             thinking={"type": "adaptive"},
             output_config={"effort": "high", "format": {"type": "json_schema", "schema": SCHEMA}},
             system=system,
             messages=[{"role": "user", "content": user}],
-        )
+        ) as stream:
+            resp = stream.get_final_message()
     except Exception as e:  # noqa: BLE001 - the briefing must never block a data refresh
         print(f"briefing failed: {type(e).__name__}: {e}", file=sys.stderr)
         return
     if resp.stop_reason == "refusal":
         print(f"briefing refused: {getattr(resp, 'stop_details', None)}", file=sys.stderr)
+        return
+    if resp.stop_reason == "max_tokens":
+        print(f"briefing hit the {MAX_TOKENS:,}-token ceiling and was cut off; raise MAX_TOKENS", file=sys.stderr)
         return
 
     text = next((b.text for b in resp.content if b.type == "text"), None)
@@ -229,7 +238,7 @@ def main():
     try:
         parsed = json.loads(text)
     except json.JSONDecodeError as e:
-        print(f"response was not valid JSON: {e}", file=sys.stderr)
+        print(f"response was not valid JSON ({e}); stop_reason was {resp.stop_reason}", file=sys.stderr)
         return
 
     u = resp.usage
