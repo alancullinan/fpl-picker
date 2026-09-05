@@ -64,20 +64,27 @@ jobs:
         if: steps.gate.outputs.run == 'yes'
         run: python pipeline/build.py
       - name: Write the weekly briefing
-        # Optional: needs the ANTHROPIC_API_KEY secret. Skipped without it, and
-        # a failure inside the script leaves the previous briefing in place.
-        if: steps.gate.outputs.run == 'yes' && env.ANTHROPIC_API_KEY != ''
+        # Optional: needs the ANTHROPIC_API_KEY secret. The guards are inside the
+        # script rather than in an `if:` condition, because a step's own `env:`
+        # block is not readable from its own `if:` - the earlier version silently
+        # never ran. Every exit path here is 0: the briefing must not be able to
+        # block a data refresh.
+        if: steps.gate.outputs.run == 'yes'
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: |
-          pip install --quiet anthropic
-          python pipeline/briefing.py
+          if [ -z "$ANTHROPIC_API_KEY" ]; then
+            echo "no ANTHROPIC_API_KEY secret; skipping the briefing"
+            exit 0
+          fi
+          pip install --quiet anthropic || { echo "could not install the SDK; skipping"; exit 0; }
+          python pipeline/briefing.py || echo "briefing step failed; keeping the previous one"
       - name: Commit if changed
         if: steps.gate.outputs.run == 'yes'
         run: |
           git config user.name "fpl-picker-bot"
           git config user.email "actions@users.noreply.github.com"
-          git add data/fpl.json data/history data/briefing.json
+          git add -A data      # -A so a briefing that was never written cannot abort the commit
           if git diff --cached --quiet; then
             echo "no data change"
           else
