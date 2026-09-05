@@ -1258,8 +1258,10 @@ ${squadContext()}`;
         if (unsub) { unsub(); unsub = null; }
         if (!u) { api.token = ''; status('Sync: not signed in. Plan is kept in this browser only.'); $('#sync-btn').textContent = 'Sign in to sync'; return; }
         $('#sync-btn').textContent = 'Sign out';
-        status(`Sync: signed in as ${u.displayName || u.email}`);
-        Ask.showUid(u.uid);   // needed once, to lock the Worker to this account
+        // The uid is shown here, not only in the Ask box, because it is needed
+        // to lock the Worker down before the Ask box can appear at all.
+        status(`Sync: signed in as ${u.displayName || u.email} · uid ${u.uid}`);
+        Ask.showUid(u.uid);
         await pullAll();
         ready = true;
         unsub = docRef('plan').onSnapshot((snap) => applyRemotePlan(snap.data()));

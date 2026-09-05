@@ -22,12 +22,16 @@ appears on the Advice tab for anyone signed in.
 ## Locking it to you
 
 Until `ALLOWED_UIDS` is set, any signed-in Google account that knows the URL can
-spend against your key. To close that:
+spend against your key. To close that: open the site, sign in, and read your uid
+from the sync line in the footer. Put it in `ALLOWED_UIDS` and deploy again.
 
-1. Open the site, sign in, go to the Advice tab. Your Firebase uid is shown
-   under the Ask box.
-2. Put it in `ALLOWED_UIDS` in `wrangler.toml`.
-3. `npx wrangler deploy` again.
+## Deploying without a local checkout
+
+Everything here can be done in the Cloudflare dashboard instead: Workers &
+Pages, Create, Start from Hello World, then paste `src/index.js` over the
+editor's contents. Set the same values under Settings — `ANTHROPIC_API_KEY` as a
+secret, and `FIREBASE_API_KEY`, `ALLOWED_UIDS`, `ALLOWED_ORIGINS` as plain text
+variables, copying them from `wrangler.toml`.
 
 ## What it will and will not do
 
