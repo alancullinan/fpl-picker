@@ -741,16 +741,26 @@
       closeModal(); triggerRefresh(v);
     });
   }
+  // Dispatch the workflow. `inputs.ai` is the only thing that spends money, and
+  // nothing sets it except an explicit request from here or the Actions tab.
+  async function dispatchWorkflow(tok, inputs) {
+    const r = await fetch(`https://api.github.com/repos/${REPO.owner}/${REPO.name}/actions/workflows/${REPO.workflow}/dispatches`, {
+      method: 'POST', headers: { Authorization: 'Bearer ' + tok, Accept: 'application/vnd.github+json', 'Content-Type': 'application/json' },
+      body: JSON.stringify(inputs ? { ref: 'main', inputs } : { ref: 'main' }),
+    });
+    if (r.status === 401 || r.status === 403 || r.status === 404) {
+      try { localStorage.removeItem(tokenKey); } catch (e) { /* ignore */ }
+      Sync.pushToken('');
+      throw new Error('GitHub rejected the token (HTTP ' + r.status + '). It was cleared; try again.');
+    }
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+  }
+
   async function triggerRefresh(tok) {
     const btn = $('#refresh'); btn.disabled = true; btn.textContent = 'Refreshing…';
     const before = D ? D.generated : null;
     try {
-      const r = await fetch(`https://api.github.com/repos/${REPO.owner}/${REPO.name}/actions/workflows/${REPO.workflow}/dispatches`, {
-        method: 'POST', headers: { Authorization: 'Bearer ' + tok, Accept: 'application/vnd.github+json', 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ref: 'main' }),
-      });
-      if (r.status === 401 || r.status === 403 || r.status === 404) { try { localStorage.removeItem(tokenKey); } catch (e) { /* ignore */ } Sync.pushToken(''); throw new Error('GitHub rejected the token (HTTP ' + r.status + '). It was cleared; try again.'); }
-      if (!r.ok) throw new Error('HTTP ' + r.status);
+      await dispatchWorkflow(tok);
     } catch (e) {
       note('Refresh failed: ' + e.message); btn.disabled = false; btn.textContent = 'Refresh data'; return;
     }
@@ -774,14 +784,14 @@
   // read here as plain data. It is advice, not a number: nothing in it feeds
   // expected points.
   async function loadBriefing() {
-    let b;
+    let b = null;
     try {
       const r = await fetch('data/briefing.json?ts=' + Date.now(), { cache: 'no-store' });
-      if (!r.ok) return;
-      b = await r.json();
-    } catch (e) { return; }
+      if (r.ok) b = await r.json();
+    } catch (e) { /* no briefing yet */ }
+    renderAsk(b);
     if (!b || !b.briefing || b.gw !== D.next_gw) return;   // stale: written for an earlier deadline
-    $('#brief-empty').classList.add('hidden');
+    try { localStorage.setItem('fplbrief', JSON.stringify({ generated: b.generated, gw: b.gw })); } catch (e) { /* ignore */ }
     $('#tab-dot').classList.remove('hidden');
     const br = b.briefing;
     const stale = new Date(D.generated) - new Date(b.data_generated) > 36e5;
@@ -819,6 +829,57 @@
     }
     $('#brief').classList.remove('hidden');
     $('#brief-copy').onclick = () => copyBriefing(b);
+  }
+
+  // The briefing is written only when asked for. Nothing on a schedule spends
+  // money; this button and the Actions tab are the only ways to start one.
+  function renderAsk(b) {
+    const card = $('#brief-ask'); if (!card) return;
+    const has = b && b.briefing && b.gw === D.next_gw;
+    $('#ask-title').textContent = has ? 'Write a fresh briefing' : 'Ask for a briefing';
+    const dataAge = relTime(D.generated);
+    $('#ask-note').innerHTML = has
+      ? `The one below was written ${relTime(b.generated)} from data of ${fmtDate(b.data_generated)}. A new one reads the latest team news and costs about 30¢. Worth it after a press conference; not worth it twice in an hour.`
+      : `No briefing yet for GW${D.next_gw}. Writing one reads the current data (refreshed ${dataAge}) and the latest team news, and costs about 30¢.`;
+    $('#brief-run').onclick = () => askForBriefing();
+  }
+
+  async function askForBriefing() {
+    const tok = getToken();
+    if (!tok) return openTokenSetup();
+    const btn = $('#brief-run'), st = $('#ask-status');
+    const before = (() => { try { return JSON.parse(localStorage.getItem('fplbrief') || 'null'); } catch (e) { return null; } })();
+    btn.disabled = true; btn.textContent = 'Writing…';
+    st.textContent = 'Starting the workflow…';
+    try {
+      await dispatchWorkflow(tok, { ai: 'true' });
+    } catch (e) {
+      st.textContent = 'Could not start: ' + e.message;
+      btn.disabled = false; btn.textContent = 'Write a briefing';
+      return;
+    }
+    st.textContent = 'Reading team news and thinking. This takes two to four minutes.';
+    const started = Date.now();
+    const poll = async () => {
+      try {
+        const r = await fetch('data/briefing.json?ts=' + Date.now(), { cache: 'no-store' });
+        if (r.ok) {
+          const b = await r.json();
+          if (b && b.generated !== (before && before.generated) && b.gw === D.next_gw) {
+            st.textContent = 'Done.';
+            btn.disabled = false; btn.textContent = 'Write a fresh briefing';
+            await loadBriefing();
+            return;
+          }
+        }
+      } catch (e) { /* keep polling */ }
+      if (Date.now() - started < 8 * 60000) setTimeout(poll, 15000);
+      else {
+        st.textContent = 'Nothing new after eight minutes. Check the Actions tab for the run.';
+        btn.disabled = false; btn.textContent = 'Write a briefing';
+      }
+    };
+    setTimeout(poll, 30000);
   }
 
   // Plain text of the briefing, so it can be pasted somewhere to talk about.

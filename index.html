@@ -89,8 +89,13 @@
 
     <!-- Advice -->
     <section id="view-advice" class="view hidden">
-      <div id="brief-empty" class="card">
-        <p class="muted">No briefing yet for this gameweek. One is written each day once the data refreshes; you can force one from the Actions tab.</p>
+      <div class="card" id="brief-ask">
+        <div class="card-head"><h2 id="ask-title">Ask for a briefing</h2></div>
+        <p class="muted small" id="ask-note"></p>
+        <div class="actions">
+          <button class="btn primary" id="brief-run">Write a briefing</button>
+          <span class="muted small" id="ask-status"></span>
+        </div>
       </div>
       <section id="brief" class="card brief hidden">
         <div class="card-head">
@@ -171,6 +176,6 @@
   </div>
 
   <script src="firebase-config.js?v=2"></script>
-  <script src="app.js?v=18"></script>
+  <script src="app.js?v=19"></script>
 </body>
 </html>
