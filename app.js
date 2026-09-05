@@ -178,7 +178,8 @@
     loadBriefing();
     Sync.start();
     $('#generated').textContent = 'Data refreshed ' + relTime(D.generated) + ' (' + fmtDate(D.generated) + ').' + (D.lineups ? ` Predicted lineups: ${D.lineups.matches.length} matches from Rotowire.` : ' No predicted lineups in this refresh.')
-      + (D.top ? ` Ownership sampled from ${D.top.sampled} squads in the top ${commas(D.top.ranks[1])}.` : '');
+      + (D.top ? ` Ownership sampled from ${D.top.sampled} squads in the top ${commas(D.top.ranks[1])}.` : '')
+      + (D.news ? ` Team news: ${D.news.count} signals across ${D.news.checked.length} clubs, read ${relTime(D.news.generated)}.` : '');
   }
   function note(msg) { const st = $('#status'); st.textContent = msg; st.classList.remove('hidden'); }
 
@@ -271,6 +272,24 @@
       ? ' — the projection leans on the prior rather than on what he has done, so treat it as an extrapolation.'
       : p.conf === 'med' ? ' — enough to be indicative, not settled.' : '.';
     return `<b>${label}</b>: about ${season} full matches of evidence (${p.min} min this season plus last season's)${note}`;
+  }
+  // Team news read from reporting, shown as context. Deliberately not an xP
+  // input: it has not yet been scored against what actually happened.
+  const NEWS_LABEL = {
+    expected_to_start: ['Expected to start', 'good'], returning: ['Returning', 'good'],
+    rotation_risk: ['Rotation risk', 'warn'], role_change: ['Role change', 'warn'],
+    doubt: ['Doubtful', 'warn'], out: ['Out', 'bad'],
+  };
+  function newsTag(p) {
+    if (!p.news_sig) return '';
+    const [label, tone] = NEWS_LABEL[p.news_sig.signal] || [p.news_sig.signal, 'muted'];
+    return `<span class="tag news ${tone}" title="${esc(p.news_sig.note)} (${esc(p.news_sig.source)})">${esc(label)}</span>`;
+  }
+  function newsText(p) {
+    if (!p.news_sig) return '';
+    const [label] = NEWS_LABEL[p.news_sig.signal] || [p.news_sig.signal];
+    return `<b>${esc(label)}</b> · ${esc(p.news_sig.note)}<br>`
+      + `<span class="muted">${esc(p.news_sig.source)} · ${esc(p.news_sig.confidence)} confidence · not in the xP model</span>`;
   }
   function flag(p) {
     if (p.status === 'a') return '';
@@ -402,7 +421,7 @@
       <div class="t">${esc(t.short)} ${money(p.price)}</div>
       <div>${luDot(p)}${nextFixtures(p, 1)[0]}</div>
       <div class="x">${num(p.xp1)} xP</div>
-      <div class="small">${flag(p)}</div>`;
+      <div class="small">${flag(p)}${newsTag(p)}</div>`;
     c.addEventListener('click', () => {
       if (pendingSwap && pendingSwap !== p.id) {
         const from = pendingSwap;
@@ -563,7 +582,7 @@
     for (const p of rows.slice(0, limit)) {
       const tr = el('tr', 'clickable' + (mine.has(p.id) ? ' mine' : ''));
       tr.innerHTML = COLS.map((c) => {
-        if (c.k === 'name') return `<td class="name">${luDot(p)}${esc(p.name)} ${confMark(p)}${flag(p)}<span class="sub">${esc(teamOf(p).short)} · ${POS[p.pos]} ${spTag(p)}</span></td>`;
+        if (c.k === 'name') return `<td class="name">${luDot(p)}${esc(p.name)} ${confMark(p)}${flag(p)}<span class="sub">${esc(teamOf(p).short)} · ${POS[p.pos]} ${spTag(p)}${newsTag(p)}</span></td>`;
         if (c.gw != null) { const g = teamOf(p).fixtures[c.gw] || []; return `<td>${g.length ? g.map(fxChip).join('') : fxChip(null)}<span class="sub x">${num(p.xp_gw[c.gw])}</span></td>`; }
         return `<td class="${c.x ? 'x' : ''}">${c.f ? c.f(colVal(c, p)) : num(colVal(c, p))}</td>`;
       }).join('');
@@ -643,6 +662,7 @@
         <span class="k">Next 5 xP</span><span><b>${num(p.xp5)}</b></span>
         <span class="k">If he plays 90</span><span>${num((p.xp_full || p.xp_gw)[0])} next GW · ${num(xpFullN(p, 5))} next 5</span>
         <span class="k">Evidence</span><span>${confMark(p)} ${confText(p)}</span>
+        ${p.news_sig ? `<span class="k">Team news</span><span>${newsText(p)}</span>` : ''}
         <span class="k">Set pieces</span><span>${spTag(p)} ${spText(p)} <span class="muted">(not in the xP model)</span></span>
         <span class="k">Lineup</span><span>${luDot(p)} ${luText(p) || '<span class="muted">no lineup data</span>'}</span>
         <span class="k">Minutes</span><span>${Math.round(p.p_play * 100)}% to play, ${Math.round((p.p_60 ?? p.p_play) * 100)}% for 60+, ${p.xmin != null ? p.xmin + ' expected' : ''}${p.chance != null ? ' · FPL flag ' + p.chance + '%' : ''}${p.recent && p.recent.length ? '<br><span class="muted">last ' + p.recent.length + ': ' + p.recent.join(', ') + ' min</span>' : ''}</span>

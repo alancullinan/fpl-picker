@@ -23,6 +23,10 @@ Pages from the `main` branch root.
   deadline", with every tunable in `PARAMS`. Shared by build and backtest.
 - `pipeline/build.py`: raw into `data/fpl.json`, the single bundle the site reads, plus a
   prediction snapshot in `data/history/gwNN.json`. Standard library only.
+- `pipeline/news.py`: reads team news with Claude + web search into structured per-player
+  signals, archived per gameweek in `data/news/`. Runs between the two `build.py` calls in the
+  workflow, because it needs the bundle and the bundle needs its output. Never an xP input
+  until scored - see the skill.
 - `pipeline/briefing.py`: asks Claude for the week's advice from the built bundle plus the FPL
   skill, and writes `data/briefing.json`. Advice only - nothing it produces feeds expected
   points. `--dry-run` prints the prompt without calling the API. Needs the ANTHROPIC_API_KEY

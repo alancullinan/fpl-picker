@@ -393,3 +393,7 @@ details.details[open] summary::before { content: "▾ "; }
 .brief-risks { font-size: 12.5px; color: var(--ink-dim); margin: 10px 0 0; padding-left: 18px; }
 .brief-risks li { margin-bottom: 3px; }
 .brief-stale { color: var(--warn); }
+.tag.news { margin-left: 3px; font-size: 10px; }
+.tag.news.good { background: var(--good); color: #06210f; }
+.tag.news.warn { background: var(--warn); color: #1a1206; }
+.tag.news.bad { background: var(--bad); color: #24090a; }

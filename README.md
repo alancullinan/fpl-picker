@@ -89,6 +89,14 @@ site simply shows no briefing. About 7k input tokens a run, a few pence.
 The briefing is advice, never an input: nothing it says feeds expected points, for the same
 reason ownership does not. `--dry-run` prints the prompt without calling the API.
 
+## Team news (optional)
+
+`pipeline/news.py` asks Claude, with web search, to read team news the numeric model cannot
+see - a manager resting someone, a midweek European tie, a return from injury, a change of
+role - and returns one structured signal per player. It runs only within 96 hours of the
+deadline. Signals are archived per gameweek in `data/news/`, shown in the site, and are
+**not** an input to expected points until they have been scored against actual minutes.
+
 ## Cross-device sync (optional)
 
 `firebase-config.js` holds a Firebase web config. With it set, the site offers Google sign-in

@@ -63,6 +63,18 @@ jobs:
       - name: Build site bundle
         if: steps.gate.outputs.run == 'yes'
         run: python pipeline/build.py
+      - name: Read team news
+        # Only inside the news window (see --max-hours); searching costs money and
+        # football news a week out is worthless. Every exit path is 0.
+        if: steps.gate.outputs.run == 'yes'
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          if [ -z "$ANTHROPIC_API_KEY" ]; then echo "no key; skipping news"; exit 0; fi
+          pip install --quiet anthropic || { echo "could not install the SDK; skipping"; exit 0; }
+          python pipeline/news.py || echo "news step failed; carrying on"
+          # Rebuild so any new signals are folded into the bundle the site reads.
+          python pipeline/build.py
       - name: Write the weekly briefing
         # Optional: needs the ANTHROPIC_API_KEY secret. The guards are inside the
         # script rather than in an `if:` condition, because a step's own `env:`

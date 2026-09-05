@@ -103,11 +103,36 @@ def build(raw, out):
     fixture_hist = load(raw, "element-history.json") or {}
     lineups = load(raw, "lineups.json") or {}
     top = load(raw, "top-picks.json") or {}
+    # Team news read by news.py for this gameweek. Carried through and shown,
+    # but deliberately not an input to the model: see the FPL skill.
+    news, news_by_id = {}, {}
+    news_path = os.path.join(os.path.dirname(out) or ".", "news", f"gw{next_id:02d}.json") if next_id else ""
+    if news_path and os.path.exists(news_path):
+        try:
+            with open(news_path, encoding="utf-8") as f:
+                news = json.load(f)
+            for sig in news.get("signals", []):
+                news_by_id[sig["id"]] = {k: sig[k] for k in ("signal", "confidence", "note", "source")}
+        except (OSError, ValueError) as e:
+            print(f"could not read {news_path}: {e}", file=sys.stderr)
     top_n = top.get("sampled") or 0
     top_counts = top.get("counts") or {}
     short_to_id = {t["short_name"]: tid for tid, t in teams.items()}
+    # Rotowire shows whatever match is next for each club, which during an
+    # international break or a midweek round is not this gameweek's fixture.
+    # Only a lineup for a fixture actually in the upcoming gameweek says
+    # anything about it; anything else is a week-old team sheet.
+    next_pairs = set()
+    for f in fixtures:
+        if f.get("event") == next_id:
+            next_pairs.add((teams[f["team_h"]]["short_name"], teams[f["team_a"]]["short_name"]))
     lineup_of, inj_tag, team_has_lineup, lineup_status = {}, {}, {}, {}
+    kept, dropped = 0, 0
     for m in lineups.get("matches", []):
+        if (m["home"], m["away"]) not in next_pairs:
+            dropped += 1
+            continue
+        kept += 1
         for side in ("home", "away"):
             tid = short_to_id.get(m[side])
             if tid is None:
@@ -118,6 +143,10 @@ def build(raw, out):
                 lineup_of[pid] = "xi"
         for pid, tag in (m.get("injuries") or {}).items():
             inj_tag[int(pid)] = tag
+    if lineups:
+        print(f"lineups: {kept} for GW{next_id}, {dropped} for other rounds and ignored")
+    if not kept:
+        lineups = {}
     median_price = {}
     for pos in POS:
         prices = sorted(e["now_cost"] for e in bs["elements"] if e["element_type"] == pos)
@@ -221,6 +250,7 @@ def build(raw, out):
             "fk": model._order(p.get("direct_freekicks_order")) or None,
             "lineup": lineup,
             "inj_tag": inj_tag.get(p["id"]),
+            "news_sig": news_by_id.get(p["id"]),
             "xp1": xp1,
             "xp5": xp5,
             "xp_gw": gw_xp,
@@ -332,9 +362,12 @@ def build(raw, out):
                     "finished": e.get("finished", False), "avg": e.get("average_entry_score"),
                     "top": e.get("highest_score")} for e in events],
         "chips": chips_def,
+        "news": {"generated": news.get("generated"), "checked": news.get("checked", []),
+                 "count": len(news_by_id)} if news_by_id else None,
         "top": {"gw": top.get("gw"), "sampled": top_n, "ranks": top.get("ranks")} if top_n else None,
         "lineups": {"source": lineups.get("source"), "fetched": lineups.get("fetched"),
-                    "matches": [{"home": m["home"], "away": m["away"], "status": m["status"]} for m in lineups.get("matches", [])]} if lineups else None,
+                    "matches": [{"home": m["home"], "away": m["away"], "status": m["status"]}
+                                for m in lineups.get("matches", []) if (m["home"], m["away"]) in next_pairs]} if lineups else None,
         "teams": team_out,
         "players": players,
         "me": my,
