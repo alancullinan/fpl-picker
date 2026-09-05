@@ -109,10 +109,11 @@ button, input, select { font-family: var(--body); font-size: inherit; }
   background: var(--ground);
 }
 .tab {
-  flex: 1; background: none; border: 0; color: var(--ink-dim);
-  font-family: var(--display); font-size: 16px; font-weight: 600;
-  text-transform: uppercase; letter-spacing: .05em;
-  padding: 11px 0 9px; border-bottom: 2px solid transparent; cursor: pointer;
+  flex: 1; background: none; border: 0; color: var(--ink-dim); position: relative;
+  font-family: var(--display); font-size: 15px; font-weight: 600;
+  text-transform: uppercase; letter-spacing: .03em;
+  padding: 11px 2px 9px; border-bottom: 2px solid transparent; cursor: pointer;
+  white-space: nowrap;
 }
 .tab.active { color: var(--ink); border-bottom-color: var(--accent); }
 
@@ -397,3 +398,5 @@ details.details[open] summary::before { content: "▾ "; }
 .tag.news.good { background: var(--good); color: #06210f; }
 .tag.news.warn { background: var(--warn); color: #1a1206; }
 .tag.news.bad { background: var(--bad); color: #24090a; }
+.tab-dot { color: var(--accent); font-size: 8px; vertical-align: super; margin-left: 2px; }
+.brief .card-head .actions { align-items: center; gap: 8px; }

@@ -66,7 +66,7 @@ jobs:
       - name: Read team news
         # Only inside the news window (see --max-hours); searching costs money and
         # football news a week out is worthless. Every exit path is 0.
-        if: steps.gate.outputs.run == 'yes'
+        if: steps.gate.outputs.run == 'yes' && github.event_name != 'push'
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: |
@@ -81,7 +81,11 @@ jobs:
         # block is not readable from its own `if:` - the earlier version silently
         # never ran. Every exit path here is 0: the briefing must not be able to
         # block a data refresh.
-        if: steps.gate.outputs.run == 'yes'
+        #
+        # Not on push: a development push should never spend money. The script
+        # additionally skips if a briefing for this gameweek is under 10 h old,
+        # so the three-hourly runs near a deadline write at most one a night.
+        if: steps.gate.outputs.run == 'yes' && github.event_name != 'push'
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: |

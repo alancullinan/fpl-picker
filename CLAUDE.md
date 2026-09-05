@@ -30,7 +30,10 @@ Pages from the `main` branch root.
 - `pipeline/briefing.py`: asks Claude for the week's advice from the built bundle plus the FPL
   skill, and writes `data/briefing.json`. Advice only - nothing it produces feeds expected
   points. `--dry-run` prints the prompt without calling the API. Needs the ANTHROPIC_API_KEY
-  repository secret; without it the workflow step is skipped.
+  repository secret; without it the workflow step is skipped. Costs about $0.30 a run, so it
+  is rate limited: never on push events, and never twice within `--min-age` hours (10 by
+  default). The same applies to news.py. Do not remove those guards to make testing easier -
+  use `--force` locally instead.
 - `pipeline/sweep.py`: runs every model parameter over a grid through the backtest and prints
   three-season deltas against the current default. Run it before claiming a coefficient is right.
 - `pipeline/backtest.py`: replays past seasons from the Vaastav mirror and scores the model

@@ -781,6 +781,8 @@
       b = await r.json();
     } catch (e) { return; }
     if (!b || !b.briefing || b.gw !== D.next_gw) return;   // stale: written for an earlier deadline
+    $('#brief-empty').classList.add('hidden');
+    $('#tab-dot').classList.remove('hidden');
     const br = b.briefing;
     const stale = new Date(D.generated) - new Date(b.data_generated) > 36e5;
     $('#brief-meta').innerHTML = `GW${b.gw} · written ${relTime(b.generated)}`
@@ -816,6 +818,53 @@
         `<h3>What would make this wrong</h3><ul class="brief-risks">${br.risks.map((r) => `<li>${esc(r)}</li>`).join('')}</ul>`));
     }
     $('#brief').classList.remove('hidden');
+    $('#brief-copy').onclick = () => copyBriefing(b);
+  }
+
+  // Plain text of the briefing, so it can be pasted somewhere to talk about.
+  // Carries the context needed to make sense of it away from the app.
+  function briefingText(b) {
+    const br = b.briefing;
+    const L = [
+      `FPL Picker briefing — gameweek ${b.gw}`,
+      `Deadline ${fmtDate(b.deadline)} · written ${fmtDate(b.generated)} from data of ${fmtDate(b.data_generated)}`,
+      '', br.headline, '',
+    ];
+    const sec = (title, items, conf) => {
+      if (!items || !items.length) return;
+      L.push(title.toUpperCase());
+      for (const it of items) {
+        L.push(`- ${it.action}${conf && it.confidence ? ` (${it.confidence} confidence)` : ''}`);
+        L.push(`  ${it.why}`);
+      }
+      L.push('');
+    };
+    sec('Do', br.do, true);
+    sec('Consider', br.consider, true);
+    sec('Leave alone', br.ignore, false);
+    if (br.captain) L.push('CAPTAIN', `- ${br.captain.pick} (alternative: ${br.captain.alternative})`, `  ${br.captain.why}`, '');
+    if (br.chips) L.push('CHIPS', `  ${br.chips}`, '');
+    if (br.risks && br.risks.length) L.push('WHAT WOULD MAKE THIS WRONG', ...br.risks.map((r) => `- ${r}`), '');
+    const me = D.me || {};
+    L.push(`Squad: ${(me.picks || []).map((pk) => (byId.get(pk.id) || {}).name).filter(Boolean).join(', ')}`);
+    L.push(`Bank £${me.bank}m · ${me.free_transfers} free transfer(s) · rank ${commas(me.overall_rank)}`);
+    return L.join('\n');
+  }
+  async function copyBriefing(b) {
+    const text = briefingText(b);
+    const btn = $('#brief-copy');
+    const done = (msg) => { btn.textContent = msg; setTimeout(() => { btn.textContent = 'Copy'; }, 2000); };
+    try {
+      await navigator.clipboard.writeText(text);
+      done('Copied');
+    } catch (e) {
+      // Older iOS and any non-secure context: fall back to a selection copy.
+      const ta = document.createElement('textarea');
+      ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+      document.body.appendChild(ta); ta.select();
+      try { document.execCommand('copy'); done('Copied'); } catch (e2) { done('Press and hold to copy'); }
+      document.body.removeChild(ta);
+    }
   }
 
   // ---------- multi-week transfer solver ----------

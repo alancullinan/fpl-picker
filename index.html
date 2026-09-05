@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&display=swap">
-  <link rel="stylesheet" href="styles.css?v=14">
+  <link rel="stylesheet" href="styles.css?v=15">
 </head>
 <body>
   <header class="top">
@@ -23,7 +23,8 @@
   </header>
 
   <nav class="tabs" role="tablist">
-    <button class="tab active" data-view="team" role="tab">My Team</button>
+    <button class="tab active" data-view="team" role="tab">Team</button>
+    <button class="tab" data-view="advice" role="tab">Advice<span id="tab-dot" class="tab-dot hidden">●</span></button>
     <button class="tab" data-view="players" role="tab">Players</button>
     <button class="tab" data-view="fixtures" role="tab">Fixtures</button>
   </nav>
@@ -38,14 +39,6 @@
       </div>
       <div id="team-content" class="hidden">
         <p id="lastgw" class="muted small lastgw"></p>
-        <section id="brief" class="card brief hidden">
-          <div class="card-head">
-            <h2>The week</h2>
-            <span class="muted small" id="brief-meta"></span>
-          </div>
-          <p id="brief-headline" class="brief-headline"></p>
-          <div id="brief-body"></div>
-        </section>
         <div class="card">
           <div class="card-head">
             <h2 id="gw-title"></h2>
@@ -92,6 +85,24 @@
           <div id="history" class="tablewrap"></div>
         </div>
       </div>
+    </section>
+
+    <!-- Advice -->
+    <section id="view-advice" class="view hidden">
+      <div id="brief-empty" class="card">
+        <p class="muted">No briefing yet for this gameweek. One is written each day once the data refreshes; you can force one from the Actions tab.</p>
+      </div>
+      <section id="brief" class="card brief hidden">
+        <div class="card-head">
+          <h2>The week</h2>
+          <div class="actions" style="margin:0">
+            <span class="muted small" id="brief-meta"></span>
+            <button class="btn small" id="brief-copy">Copy</button>
+          </div>
+        </div>
+        <p id="brief-headline" class="brief-headline"></p>
+        <div id="brief-body"></div>
+      </section>
     </section>
 
     <!-- Players -->
@@ -160,6 +171,6 @@
   </div>
 
   <script src="firebase-config.js?v=2"></script>
-  <script src="app.js?v=17"></script>
+  <script src="app.js?v=18"></script>
 </body>
 </html>

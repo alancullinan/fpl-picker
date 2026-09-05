@@ -84,7 +84,12 @@ risk, which suggestions rest on too little evidence, whether to bank the transfe
 
 It runs as a separate workflow step and needs an `ANTHROPIC_API_KEY` repository secret
 (Settings, Secrets and variables, Actions). Without the secret the step is skipped and the
-site simply shows no briefing. About 7k input tokens a run, a few pence.
+site simply shows no briefing.
+
+A run costs about $0.30, most of it thinking tokens, so it is rate limited two ways: the
+workflow does not call it on pushes (development should not spend money), and the script skips
+if a briefing for the same gameweek is under ten hours old. In practice that is one a day,
+plus one more as a deadline approaches. Budget roughly $2 a week in season.
 
 The briefing is advice, never an input: nothing it says feeds expected points, for the same
 reason ownership does not. `--dry-run` prints the prompt without calling the API.

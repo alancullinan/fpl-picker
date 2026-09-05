@@ -15,7 +15,12 @@ Writes data/briefing.json. Optional: any failure leaves the previous briefing
 in place and never blocks the data refresh. Needs ANTHROPIC_API_KEY and the
 `anthropic` package (the rest of the pipeline stays standard-library only).
 
+Each run costs roughly $0.30, most of it thinking tokens, so it is rate
+limited: a briefing younger than --min-age hours for the same gameweek is
+left alone, and the workflow does not call this on development pushes.
+
   python3 pipeline/briefing.py --dry-run    # print the prompt, call nothing
+  python3 pipeline/briefing.py --force      # rewrite even if a recent one exists
 """
 import argparse
 import json
@@ -180,6 +185,9 @@ def main():
     ap.add_argument("--out", default="data/briefing.json")
     ap.add_argument("--rules", default=".claude/skills/fpl/SKILL.md")
     ap.add_argument("--dry-run", action="store_true", help="print the prompt and exit without calling the API")
+    ap.add_argument("--min-age", type=float, default=10.0,
+                    help="skip if a briefing for this gameweek is younger than this many hours")
+    ap.add_argument("--force", action="store_true", help="write regardless of the age of the existing one")
     a = ap.parse_args()
 
     with open(a.data, encoding="utf-8") as f:
@@ -187,6 +195,17 @@ def main():
     if not (d.get("me") or {}).get("picks"):
         print("no squad in the bundle; skipping briefing", file=sys.stderr)
         return
+    if not a.force and not a.dry_run and os.path.exists(a.out):
+        try:
+            with open(a.out, encoding="utf-8") as f:
+                prev = json.load(f)
+            age = (datetime.now(timezone.utc)
+                   - datetime.fromisoformat(prev["generated"].replace("Z", "+00:00"))).total_seconds() / 3600
+            if prev.get("gw") == d["next_gw"] and age < a.min_age:
+                print(f"a GW{prev['gw']} briefing is {age:.1f} h old (limit {a.min_age:.0f}); skipping", file=sys.stderr)
+                return
+        except (OSError, ValueError, KeyError):
+            pass
     rules = ""
     if os.path.exists(a.rules):
         with open(a.rules, encoding="utf-8") as f:
