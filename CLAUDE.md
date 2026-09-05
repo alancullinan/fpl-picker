@@ -25,8 +25,10 @@ Pages from the `main` branch root.
   prediction snapshot in `data/history/gwNN.json`. Standard library only.
 - `worker/`: Cloudflare Worker proxying the Ask box to Claude, so the API key stays off the
   public site. Verifies a Firebase ID token against `ALLOWED_UIDS` and fixes the model and
-  token ceiling server-side. Deployed separately from Pages; `window.FPL_WORKER` in
-  `firebase-config.js` switches the feature on.
+  token ceiling server-side. It also dispatches the data workflow with a GitHub token of its
+  own, so no credential need reach the browser; the page keeps a pasted-token fallback for when
+  no Worker is configured. Deployed separately from Pages; `window.FPL_WORKER` in
+  `firebase-config.js` switches it on.
 - `pipeline/news.py`: reads team news with Claude + web search into structured per-player
   signals, archived per gameweek in `data/news/`. Runs between the two `build.py` calls in the
   workflow, because it needs the bundle and the bundle needs its output. Never an xP input

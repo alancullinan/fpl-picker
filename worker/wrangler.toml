@@ -13,5 +13,6 @@ ALLOWED_UIDS = ""
 # Origins permitted to call the Worker.
 ALLOWED_ORIGINS = "https://alancullinan.github.io,http://localhost:8000,http://localhost:8765"
 
-# The API key is a secret, never a var:
+# Both credentials are secrets, never vars:
 #   npx wrangler secret put ANTHROPIC_API_KEY
+#   npx wrangler secret put GITHUB_TOKEN

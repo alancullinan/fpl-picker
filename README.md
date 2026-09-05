@@ -110,7 +110,12 @@ API key cannot live in the browser; the Worker holds it, verifies the caller's F
 against an allowlist of uids, and streams the answer back. That makes the Ask box on the Advice
 tab answer in seconds, where a GitHub Actions round trip takes minutes.
 
-Deploy it (`worker/README.md` has the three commands), put the URL in `firebase-config.js` as
+The Worker also holds a GitHub token and dispatches the data workflow, so the Refresh and
+"Write a briefing" buttons need no credential in the browser either. With no Worker configured
+the app falls back to a GitHub token pasted into the page, which still works but has to be
+pasted on every device.
+
+Deploy it (`worker/README.md` has the commands), put the URL in `firebase-config.js` as
 `window.FPL_WORKER`, and the box appears for anyone signed in. Leave it null and the app does
 not offer the feature. The model and a 4,000-token ceiling are fixed inside the Worker, so a
 compromised page cannot run up a bill: about 2p a question.

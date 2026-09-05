@@ -724,9 +724,8 @@
   const getToken = () => { if (Sync.token) return Sync.token; try { return localStorage.getItem(tokenKey) || ''; } catch (e) { return ''; } };
   const actionsUrl = `https://github.com/${REPO.owner}/${REPO.name}/actions/workflows/${REPO.workflow}`;
   $('#refresh').addEventListener('click', () => {
-    const tok = getToken();
-    if (!tok) return openTokenSetup();
-    triggerRefresh(tok);
+    if (!window.FPL_WORKER && !getToken()) return openTokenSetup();
+    triggerRefresh();
   });
   function openTokenSetup() {
     openModal(`<h2>Refresh data</h2>
@@ -742,12 +741,31 @@
       closeModal(); triggerRefresh(v);
     });
   }
-  // Dispatch the workflow. `inputs.ai` is the only thing that spends money, and
-  // nothing sets it except an explicit request from here or the Actions tab.
-  async function dispatchWorkflow(tok, inputs) {
+  // Start the data workflow. Preferred route is the Worker, which holds the
+  // GitHub token server-side so no credential need ever reach this page; the
+  // browser-held token remains as a fallback for when the Worker is not set up.
+  // `ai` is the only expensive path and is never set except on request.
+  async function dispatchWorkflow(inputs) {
+    const ai = !!(inputs && inputs.ai);
+    if (window.FPL_WORKER) {
+      const idToken = await Sync.idToken().catch(() => null);
+      if (idToken) {
+        const r = await fetch(window.FPL_WORKER, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ idToken, action: 'refresh', ai }),
+        });
+        if (r.ok) return;
+        const e = await r.json().catch(() => ({}));
+        // 501 means the Worker has no GitHub token yet: fall through to the
+        // browser token rather than failing outright.
+        if (r.status !== 501) throw new Error(e.error || `HTTP ${r.status}`);
+      }
+    }
+    const tok = getToken();
+    if (!tok) { openTokenSetup(); throw new Error('needs a GitHub token, or a Worker that holds one'); }
     const r = await fetch(`https://api.github.com/repos/${REPO.owner}/${REPO.name}/actions/workflows/${REPO.workflow}/dispatches`, {
       method: 'POST', headers: { Authorization: 'Bearer ' + tok, Accept: 'application/vnd.github+json', 'Content-Type': 'application/json' },
-      body: JSON.stringify(inputs ? { ref: 'main', inputs } : { ref: 'main' }),
+      body: JSON.stringify(ai ? { ref: 'main', inputs: { ai: 'true' } } : { ref: 'main' }),
     });
     if (r.status === 401 || r.status === 403 || r.status === 404) {
       try { localStorage.removeItem(tokenKey); } catch (e) { /* ignore */ }
@@ -757,11 +775,11 @@
     if (!r.ok) throw new Error('HTTP ' + r.status);
   }
 
-  async function triggerRefresh(tok) {
+  async function triggerRefresh() {
     const btn = $('#refresh'); btn.disabled = true; btn.textContent = 'Refreshing…';
     const before = D ? D.generated : null;
     try {
-      await dispatchWorkflow(tok);
+      await dispatchWorkflow();
     } catch (e) {
       note('Refresh failed: ' + e.message); btn.disabled = false; btn.textContent = 'Refresh data'; return;
     }
@@ -978,14 +996,13 @@ ${squadContext()}`;
   }
 
   async function askForBriefing() {
-    const tok = getToken();
-    if (!tok) return openTokenSetup();
+    if (!window.FPL_WORKER && !getToken()) return openTokenSetup();
     const btn = $('#brief-run'), st = $('#ask-status');
     const before = (() => { try { return JSON.parse(localStorage.getItem('fplbrief') || 'null'); } catch (e) { return null; } })();
     btn.disabled = true; btn.textContent = 'Writing…';
     st.textContent = 'Starting the workflow…';
     try {
-      await dispatchWorkflow(tok, { ai: 'true' });
+      await dispatchWorkflow({ ai: true });
     } catch (e) {
       st.textContent = 'Could not start: ' + e.message;
       btn.disabled = false; btn.textContent = 'Write a briefing';
