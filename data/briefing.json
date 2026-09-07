@@ -1,81 +1,76 @@
 {
  "gw": 4,
  "deadline": "2026-09-12T12:30:00Z",
- "generated": "2026-09-05T06:34:23Z",
- "data_generated": "2026-09-05T06:32:04Z",
+ "generated": "2026-09-07T11:48:37Z",
+ "data_generated": "2026-09-07T11:46:29Z",
  "model": "claude-opus-5",
  "usage": {
-  "input": 14660,
-  "output": 10219,
-  "cost_usd": 0.3288
+  "input": 15230,
+  "output": 9027,
+  "cost_usd": 0.3018
  },
  "briefing": {
-  "headline": "You don't own Bruno Fernandes \u2014 97.7% of the top 10k own him and 93.3% captain him \u2014 and with \u00a30.1m in the bank the only routes to him are a wildcard or a two-transfer move, which is free next week if you bank this week's transfer.",
+  "headline": "There is no move worth your only free transfer at \u00a30.1m in the bank, so bank it, tidy the bench and armband, and decide next week whether to fund Bruno Fernandes \u2014 the one player the top 10k almost all own and 94% of them captain.",
   "do": [
    {
-    "action": "Bank the free transfer this week (assuming you're not wildcarding).",
-    "why": "With 1 FT you go to 2 in GW5, which pays for Haaland \u2192 Thiago and Cherki \u2192 B.Fernandes with no hit. Doing that pair now costs 4 points; waiting one week costs roughly 2.4 (Fernandes 6.11 vs Cherki 3.46 next GW, partly offset by Haaland 5.24 vs Thiago 4.95). Banking is the cheaper path to the same squad. The money works: out \u00a315.5m + \u00a37.8m, in \u00a38.0m + \u00a312.0m, leaving \u00a33.4m headroom, so it survives even if your selling prices are below the listed ones.",
+    "action": "Bank the free transfer.",
+    "why": "With \u00a30.1m in the bank every affordable swap is either marginal or a sideways downgrade. Holding gives you 2 FTs for GW5, which is the only way to reach B.Fernandes (\u00a312.0m) without a hit: Haaland (\u00a315.5m) + Semenyo (\u00a38.4m) out, Bruno + Thiago (\u00a37.9m) in is 53.5 xP over five gameweeks becoming 55.9, and leaves \u00a34.1m to fix the bench.",
+    "confidence": "medium"
+   },
+   {
+    "action": "Move the vice-captaincy from Cherki to Haaland.",
+    "why": "Cherki's xP next is 4.26; Haaland's is 5.57. If your captain plays 0 minutes you want the better fallback, and it costs nothing.",
     "confidence": "high"
    },
    {
-    "action": "Fix the bench order: van Ewijk first outfield sub, then Maguire, then Kusi-Asare.",
-    "why": "Kusi-Asare is above van Ewijk in the order at 0.41 xP next and 2.3 over five, against van Ewijk's 3.64 and 16.6 and Maguire's 2.85 and 15.4. This is free points on any auto-sub week.",
-    "confidence": "high"
-   },
-   {
-    "action": "Move the vice-captaincy off Cherki to Mbeumo.",
-    "why": "Cherki is on 3.46 xP next with 57 minutes a game and 88% play probability; Mbeumo is 5.26 with 86 minutes and 96%. If your captain blanks minutes you want the better armband behind him.",
+    "action": "Reorder the bench: van Ewijk first, then Maguire, Kusi-Asare last.",
+    "why": "Kusi-Asare sits third at 0.41 xP with 49 career minutes and no place in Fulham's predicted XI, ahead of van Ewijk at 4.02 xP and Maguire at 3.22. As it stands an auto-sub could bring on a player who will not appear.",
     "confidence": "high"
    }
   ],
   "consider": [
    {
-    "action": "Play the wildcard \u2014 but only after the final data refresh, not on this bundle.",
-    "why": "For: rank 5,601,933, \u00a30.1m in the bank, a dead squad slot in Kusi-Asare (2.3 over five gameweeks, 49 career minutes), and you are off the top-10k core almost everywhere it matters \u2014 Fernandes 97.7%, Calafiori 78.0%, Calvert-Lewin 61.3%, Isak 57.3%, Raya 55.7%, all unowned. A wildcard buys Fernandes plus three or four of those in one move, which the two-transfer plan cannot. Against: your XI is not broken (nine of eleven starters at 3.4 xP or better next week), the first chip set runs to GW19 so there is no urgency, and this data was generated on 5 September for a 12 September deadline \u2014 a week of international-break news is missing. If you wildcard, do it on Friday's numbers, and build the squad around Fernandes.",
+    "action": "Semenyo \u2192 Tavernier (\u00a38.4m to \u00a36.0m) with the free transfer.",
+    "why": "For: +1.54 xP this week (5.51 v 3.97), +3.3 over five (25.3 v 22.0), and it banks \u00a32.4m towards fixing the Kusi-Asare bench slot. Against: Tavernier is owned by 2.9% overall and 1.3% of the top 10k, so you are backing a model read on a \u00a36.0m midfielder with fixtures BRE(H)3, LIV(H)4, CHE(A)4; and spending the FT now leaves you one transfer in GW5, which kills the two-move Bruno route entirely. Do it only if you have decided you are keeping Haaland.",
     "confidence": "medium"
    },
    {
-    "action": "Take the -4 now for Fernandes instead of waiting (Haaland \u2192 Thiago, Cherki \u2192 Fernandes).",
-    "why": "For: it gains 7.7 over five gameweeks before the hit (Fernandes 33.0 for Cherki 19.5, Thiago 24.2 for Haaland 30.0), net +3.7, and it gets you the player 93.3% of the top 10k captain a week earlier. Against: 3.7 over five weeks is inside the model's error bars, and waiting one week gets the same squad for nothing. Only worth it if you fear a Fernandes price rise or you expect to wildcard later anyway.",
+    "action": "Plan the GW5 double move to B.Fernandes, funded by selling Haaland.",
+    "why": "For: 98% of the top 10k own Bruno and 94% captain him \u2014 every week he hauls you lose double to the people you are chasing, and his xP is level with Haaland's (31.7 v 31.5 over five). Against: Haaland is owned by 71.2% of the whole game, which is the field that actually decides your 3.3m rank, and selling him means being off both templates if he goes on a run. It is a rank trade, not a points trade; the numbers are a wash.",
     "confidence": "medium"
    },
    {
-    "action": "Whether to keep Haaland at all.",
-    "why": "He is 71.2% owned overall but only 10.0% among the top 10k \u2014 so holding him is a differential against the managers you want to catch, and a shield against the millions you are currently ranked among. His 30.0 over five is the second-best number in the whole dataset, but \u00a315.5m of a \u00a3100.1m squad is why you cannot reach a \u00a312.0m midfielder. Selling him is the enabling move, not a downgrade you make for its own sake.",
-    "confidence": "medium"
+    "action": "Hold all three chips.",
+    "why": "For: wildcard, free hit and bench boost must all be played by the GW19 deadline, so there is a real risk of a wasted chip if you keep drifting. Against: nothing this week triggers one \u2014 no blank, no double, and only one broken squad slot (Kusi-Asare). A wildcard to buy one player you can reach with two normal transfers is a waste.",
+    "confidence": "high"
    }
   ],
   "ignore": [
    {
-    "action": "Using the free transfer to replace Kusi-Asare.",
-    "why": "There is no forward at or below \u00a34.6m worth owning in the top-60 list \u2014 the cheapest are Awoniyi and Barry at \u00a35.5m. He is a bench slot; the fix is a wildcard, not a transfer you cannot fund."
+    "action": "Starting van Ewijk over Semenyo or Tarkowski.",
+    "why": "van Ewijk's 4.02 xP beats Semenyo's 3.97 and Tarkowski's 3.86 by less than a tenth of a point \u2014 inside the noise \u2014 and over five gameweeks Tarkowski (19.8) is clearly ahead of van Ewijk (16.8). Leave the XI as it is."
    },
    {
-    "action": "Bench Boost or Free Hit this week.",
-    "why": "No blanks or doubles in GW4, and your four bench players total 9.02 xP next gameweek (Kinsky 2.12, Maguire 2.85, Kusi-Asare 0.41, van Ewijk 3.64). Neither chip has a trigger."
+    "action": "Bench boost this week.",
+    "why": "Your bench totals 10.26 xP but \u00a34.5m of it is Kusi-Asare at 0.41. A chip that must last until GW19 should not be spent on a fourteen-and-a-half-man squad in a single gameweek."
    },
    {
-    "action": "Swapping Cherki out of the XI for van Ewijk to go 4-4-2.",
-    "why": "It is worth 0.18 xP (3.64 against 3.46) and van Ewijk's number rests on 180 minutes this season. Not worth reshaping the side for, and it disappears anyway once Cherki is sold."
-   },
-   {
-    "action": "The cheap model darlings \u2014 Tavernier (23.3 over five, 2.3% owned), Scott, Wharton, Canvot.",
-    "why": "They score well because FPL's FDR is blunt and the model rewards bulk minutes at low prices. You are 5.6m in the rank table because you lack the core, not because you lack differentials."
+    "action": "Chasing Awoniyi at 5.41 xP next.",
+    "why": "660 career minutes, only 180 this season, 0.7% owned and 0% of the top 10k. That number is an extrapolation from two and a bit starts, and at \u00a35.5m you cannot afford him anyway with \u00a30.1m in the bank."
    }
   ],
   "captain": {
    "pick": "Jo\u00e3o Pedro",
-   "alternative": "Mbeumo",
-   "why": "Jo\u00e3o Pedro leads your squad at 5.98 xP next with Hull at home (FDR 2), ahead of Mbeumo 5.26, Szoboszlai 5.24 and Haaland 5.24 away at United (FDR 4). The uncomfortable part: 93.3% of the top 10k captain B.Fernandes and you cannot, so you are taking an unwanted differential armband whatever you do this week \u2014 97.0% of them own Jo\u00e3o Pedro but only 1.3% captain him. That is the clearest statement of why the Fernandes move matters more than any single week's captain choice."
+   "alternative": "Haaland",
+   "why": "Jo\u00e3o Pedro has the highest xP in your squad at 5.88, at home to Hull (FDR 2), against Haaland's 5.57 away at Manchester City's opponents (FDR 4) \u2014 inside 0.5, so it is close. The bigger point: 94% of the top 10k captain B.Fernandes and you do not own him, so your armband is a differential whatever you do. Given that, take the higher expected score rather than the safer name. Jo\u00e3o Pedro is owned by 98.3% of the top 10k but captained by only 0.7%, Haaland by 3.3%."
   },
-  "chips": "No chip should be played in GW4 on these numbers: no double, no blank, and a bench worth 9.02 points. Triple Captain is already gone from set one (used in GW3), leaving wildcard, Free Hit and Bench Boost to be used by the GW19 deadline \u2014 plenty of time. The wildcard is the only live question, and it is a decision to make on Friday's refreshed data, not this bundle.",
+  "chips": "No chip this week. Triple captain is gone (GW3); wildcard, free hit and bench boost are all still live but none has a trigger \u2014 no blanks or doubles in GW4 and only one dead squad slot. Keep them, but note all three expire at the GW19 deadline, so pencil the bench boost in for the first proper double and treat the wildcard as your response to a real cluster of problems, not to a single missing midfielder.",
   "risks": [
-   "The data is seven days old (generated 5 September for a 12 September deadline) and covers an international break \u2014 injuries, suspensions and Rotowire lineups will all move before you confirm anything.",
-   "Fernandes at \u00a312.0m may rise before GW5; if he does, the two-transfer route still clears with \u00a33.4m of headroom, but check your actual selling prices in the app, as the model assumes you sell at current price.",
-   "Thiago's run after GW4 is hard \u2014 CHE(H)4, AVL(A)4, LIV(H)4 \u2014 so the 24.2 over five is front-loaded and he could look a poor swap for Haaland by GW6.",
-   "Selling Haaland at 71.2% overall ownership is a real risk against the field you are actually ranked in; a hat-trick week undoes several gameweeks of this plan.",
-   "Cherki's 3.46 assumes 57 minutes and 88% play; if he nails down a starting role at City the case for selling him weakens.",
-   "The GW5 plan assumes you make no transfer in GW4 and take no hit \u2014 any deviation drops you back to one free transfer and the Fernandes move costs 4."
+   "The predicted lineups were fetched on 7 September for a 12 September deadline \u2014 no press conferences have happened. Rotowire's XIs and any injury or international-break knock could change Verbruggen, Cherki or Jo\u00e3o Pedro's status before you lock in.",
+   "The GW5 Bruno plan assumes you sell Haaland and Semenyo at today's prices. Selling price is purchase price plus half the rise, and the model assumes current price; if either has risen since you bought, the \u00a312.0m for Bruno may not quite be there.",
+   "Jo\u00e3o Pedro's captaincy edge over Haaland is 0.31 xP \u2014 well inside the model's error. A Hull side that sits deep flips it.",
+   "van Ewijk (270 minutes, all this season) and Kinsky (270 this season) are thin-evidence players propping up your bench value; if either loses their place the squad is thinner than it looks.",
+   "The model carries no penalty-taker bonus, so Szoboszlai and Haaland's spot-kick duty is not in their xP \u2014 a mild reason their numbers understate them."
   ]
  }
 }
