@@ -364,8 +364,20 @@ def build(raw, out):
             if eh:
                 my["bank"] = eh.get("bank", 0) / 10.0
                 my["value"] = eh.get("value", 0) / 10.0
-                my["gw_points"] = eh.get("points")
+                # Points here - and in the history row for the same gameweek -
+                # are settled figures: FPL rewrites them when it recalculates,
+                # not as matches finish. entry.summary_event_points does move
+                # live. Preferring the settled one showed 60 for a gameweek the
+                # official app already had at 72, and contradicted the site's
+                # own season total, which comes from the live overall figure.
+                if my["picks_gw"] in finished_gws:
+                    my["gw_points"] = eh.get("points")
             my["active_chip"] = picks.get("active_chip")
+        # Same reasoning for the season table, so the two agree on screen.
+        if my.get("picks_gw") not in finished_gws and my.get("gw_points") is not None:
+            for row in my.get("history", []):
+                if row["gw"] == my["picks_gw"]:
+                    row["pts"] = my["gw_points"]
         my["transfers"] = [{
             "gw": t["event"], "in": t["element_in"], "out": t["element_out"],
             "in_cost": t["element_in_cost"] / 10.0, "out_cost": t["element_out_cost"] / 10.0,

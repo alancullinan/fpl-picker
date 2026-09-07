@@ -60,6 +60,11 @@ Pages from the `main` branch root.
 - Never commit `data/raw/`. Commit `data/fpl.json` only via the Action (or deliberately, to seed).
 - The FPL API is unofficial and undocumented. Handle missing keys defensively; `fetch.py` treats
   a missing entry as non-fatal so the player data still refreshes.
+- FPL publishes each figure twice, live and settled, and they disagree for most of a gameweek.
+  `entry.summary_event_points` and `summary_overall_points` move as matches finish;
+  `entry_history.points` and the `history` rows are rewritten only when FPL recalculates. Take
+  the live pair while the gameweek is in play, or the site reports a total the official app
+  passed hours ago and contradicts its own season table.
 - A player's history row is evidence only once its own fixture has finished (`_row_played` in
   `build.py`). FPL writes a zero-minute row at the deadline and then counts minutes up live
   during the match, so an unguarded row says a player was dropped before kick-off and says he
