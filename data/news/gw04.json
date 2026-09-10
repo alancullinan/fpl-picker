@@ -1,0 +1,209 @@
+{
+ "gw": 4,
+ "deadline": "2026-09-12T12:30:00Z",
+ "generated": "2026-09-10T06:23:52Z",
+ "data_generated": "2026-09-10T06:21:35Z",
+ "model": "claude-opus-5",
+ "usage": {
+  "input": 152838,
+  "output": 6635,
+  "cost_usd": 0.9301
+ },
+ "checked": [
+  "ARS",
+  "AVL",
+  "BHA",
+  "BRE",
+  "CHE",
+  "CRY",
+  "LEE",
+  "LIV",
+  "MCI",
+  "MUN",
+  "NEW",
+  "TOT"
+ ],
+ "signals": [
+  {
+   "player": "Nico O'Reilly",
+   "team": "MCI",
+   "signal": "returning",
+   "confidence": "high",
+   "note": "Maresca on whether O'Reilly is available for the derby: \"Nico probably yes\", after he was left out of the Porto trip with a back issue.",
+   "source": "Enzo Maresca pre-Porto press conference, via Sports Mole, 7 Sept 2026",
+   "id": 387
+  },
+  {
+   "player": "Jeremy Doku",
+   "team": "MCI",
+   "signal": "doubt",
+   "confidence": "high",
+   "note": "Maresca said of Doku's calf: \"Jeremy we're not sure yet, we need to wait\", though he is \"slowly\" back.",
+   "source": "Enzo Maresca press conference, via Sports Mole, 7 Sept 2026",
+   "id": 400
+  },
+  {
+   "player": "Jurrien Timber",
+   "team": "ARS",
+   "signal": "returning",
+   "confidence": "medium",
+   "note": "Timber has returned to training and travelled to Naples for the Champions League tie but was left out of that squad, with Sunderland flagged as a possible comeback.",
+   "source": "Sports Mole Arsenal injury round-up, 10 Sept 2026",
+   "id": 5
+  },
+  {
+   "player": "Cody Gakpo",
+   "team": "LIV",
+   "signal": "returning",
+   "confidence": "high",
+   "note": "Iraola said Gakpo finished the Ipswich game with adductor discomfort but indicated he is expected to be available.",
+   "source": "Andoni Iraola pre-Atletico press conference, via Sports Mole, 10 Sept 2026",
+   "id": 367
+  },
+  {
+   "player": "Dominik Szoboszlai",
+   "team": "LIV",
+   "signal": "role_change",
+   "confidence": "medium",
+   "note": "With Liverpool's right-backs injured, Iraola has again discussed using Szoboszlai in the back four as he did in Gameweek 2.",
+   "source": "Andoni Iraola press conference, via Fantasy Football Scout, 3 Sept 2026",
+   "id": 368
+  },
+  {
+   "player": "Bradley Barcola",
+   "team": "LIV",
+   "signal": "rotation_risk",
+   "confidence": "low",
+   "note": "Iraola hinted the new signing would begin on the bench because he had no pre-season minutes.",
+   "source": "Andoni Iraola press conference, via Fantasy Football Scout, 3 Sept 2026",
+   "id": 627
+  },
+  {
+   "player": "James Maddison",
+   "team": "TOT",
+   "signal": "returning",
+   "confidence": "medium",
+   "note": "Maddison was back in first-team training on Wednesday after a shoulder injury and is expected to be in the squad against Everton.",
+   "source": "Spurs Web / football.london, 9 Sept 2026",
+   "id": 515
+  },
+  {
+   "player": "Mykhailo Mudryk",
+   "team": "TOT",
+   "signal": "out",
+   "confidence": "medium",
+   "note": "Mudryk has picked up an ankle injury reported to sideline him until after the international break.",
+   "source": "football.london, via Spurs Web, 9 Sept 2026",
+   "id": 578
+  },
+  {
+   "player": "Moises Caicedo",
+   "team": "CHE",
+   "signal": "doubt",
+   "confidence": "medium",
+   "note": "Alonso confirmed a recurrence of the calf problem and Chelsea are being cautious to avoid a further setback even though he is close.",
+   "source": "Sports Mole Chelsea round-up citing Xabi Alonso, 10 Sept 2026",
+   "id": 159
+  },
+  {
+   "player": "Jordan Henderson",
+   "team": "CHE",
+   "signal": "out",
+   "confidence": "medium",
+   "note": "Still recovering from a World Cup wrist injury and not expected back until around the Brentford game on 18 September.",
+   "source": "Sports Mole Chelsea round-up, 10 Sept 2026",
+   "id": 101
+  },
+  {
+   "player": "Joao Gomes",
+   "team": "AVL",
+   "signal": "out",
+   "confidence": "medium",
+   "note": "Serving a suspension covering the next two gameweeks after a violent-conduct red card on his Villa debut.",
+   "source": "RotoWire Premier League suspensions tracker, early Sept 2026",
+   "id": 54
+  },
+  {
+   "player": "Nicolas Jackson",
+   "team": "AVL",
+   "signal": "expected_to_start",
+   "confidence": "medium",
+   "note": "Signed as Emery's priority direct replacement for the departed Watkins and is Villa's lead centre-forward.",
+   "source": "Yahoo Sports / Bleacher Report Villa coverage, 8-9 Sept 2026",
+   "id": 166
+  },
+  {
+   "player": "Femi Azeez",
+   "team": "BHA",
+   "signal": "returning",
+   "confidence": "high",
+   "note": "Hurzeler: \"Femi is obviously carrying a slight injury at the moment\" but hopes he is available to debut at Coventry.",
+   "source": "Fabian Hurzeler, via Sussex Express, 9 Sept 2026",
+   "id": 652
+  },
+  {
+   "player": "Josh Dasilva",
+   "team": "BRE",
+   "signal": "out",
+   "confidence": "medium",
+   "note": "Tweaked a hamstring with the Under-21s and is out until after the international break.",
+   "source": "RotoWire injury tracker, 4 Sept 2026",
+   "id": 103
+  },
+  {
+   "player": "Nico Elvedi",
+   "team": "LEE",
+   "signal": "expected_to_start",
+   "confidence": "medium",
+   "note": "Elvedi is expected to step into central defence with Farke calling Rodon's hamstring an eight-to-10-week injury.",
+   "source": "RotoWire, citing Daniel Farke, 3 Sept 2026",
+   "id": 598
+  },
+  {
+   "player": "Matthijs de Ligt",
+   "team": "MUN",
+   "signal": "returning",
+   "confidence": "high",
+   "note": "Carrick: \"he's training and great to have him back... he's in good shape and moving in a good direction\" after a long absence.",
+   "source": "Michael Carrick, via Yahoo Sports, 8 Sept 2026",
+   "id": 416
+  },
+  {
+   "player": "Benjamin Sesko",
+   "team": "MUN",
+   "signal": "doubt",
+   "confidence": "medium",
+   "note": "Carrick confirmed Sesko is not yet fully fit following the shin injury sustained in May.",
+   "source": "Michael Carrick press conference, 4 Sept 2026",
+   "id": 439
+  },
+  {
+   "player": "Joelinton",
+   "team": "NEW",
+   "signal": "returning",
+   "confidence": "medium",
+   "note": "Reported to be targeting the trip to Leeds as his comeback date after a fresh muscle problem.",
+   "source": "Jordan Cronin, Shields Gazette, late Aug 2026",
+   "id": 458
+  },
+  {
+   "player": "Tino Livramento",
+   "team": "NEW",
+   "signal": "returning",
+   "confidence": "low",
+   "note": "Jaissle said Livramento has been back in partial group training after his calf injury but stopped short of confirming squad involvement.",
+   "source": "Matthias Jaissle press conferences, via NUFC/Yahoo, early Sept 2026",
+   "id": 450
+  },
+  {
+   "player": "Jorgen Strand Larsen",
+   "team": "CRY",
+   "signal": "expected_to_start",
+   "confidence": "medium",
+   "note": "Sage has ruled Mateta out for weeks, leaving Strand Larsen as the leading option to start at centre-forward.",
+   "source": "Pierre Sage press conference, via Fox Sports/Palace site, early Sept 2026",
+   "id": 222
+  }
+ ],
+ "unmatched": []
+}
