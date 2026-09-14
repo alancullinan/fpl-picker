@@ -1,0 +1,94 @@
+{
+ "gw": 5,
+ "deadline": "2026-09-18T17:30:00Z",
+ "generated": "2026-09-14T20:54:33Z",
+ "data_generated": "2026-09-14T20:51:36Z",
+ "model": "claude-opus-5",
+ "usage": {
+  "input": 155981,
+  "output": 5655,
+  "cost_usd": 0.9213
+ },
+ "checked": [
+  "ARS",
+  "AVL",
+  "LIV",
+  "MUN",
+  "SUN"
+ ],
+ "signals": [
+  {
+   "player": "William Saliba",
+   "team": "ARS",
+   "signal": "out",
+   "confidence": "medium",
+   "note": "Reported from Arteta's pre-match briefing that Saliba was Arsenal's only other absentee, with a midweek Carabao Cup tie at Ipswich also in the diary before Brighton.",
+   "source": "Arseblog News, c. 10 September 2026",
+   "id": 6
+  },
+  {
+   "player": "Pau Torres",
+   "team": "AVL",
+   "signal": "out",
+   "confidence": "medium",
+   "note": "Hamstring injury sustained against Forest is expected to cost him two to four weeks, making the Spurs trip highly unlikely.",
+   "source": "Villa reporting, 14 September 2026",
+   "id": 34
+  },
+  {
+   "player": "Ian Maatsen",
+   "team": "AVL",
+   "signal": "out",
+   "confidence": "medium",
+   "note": "Villa's left-back picked up an ankle injury with a timescale now confirmed, removing Emery's main left-sided outlet.",
+   "source": "Express & Star / Birmingham Live, 14 September 2026",
+   "id": 36
+  },
+  {
+   "player": "Luke Shaw",
+   "team": "MUN",
+   "signal": "rotation_risk",
+   "confidence": "high",
+   "note": "Carrick said Shaw was given an extra recovery day after coming off with cramp at Everton and that United are managing him rather than taking risks.",
+   "source": "Manchester Evening News via Yahoo Sports, 11 September 2026",
+   "id": 423
+  },
+  {
+   "player": "Carlos Baleba",
+   "team": "MUN",
+   "signal": "out",
+   "confidence": "medium",
+   "note": "The \u00a370m summer signing from Brighton is still sidelined with the ankle injury suffered in pre-season and has yet to debut.",
+   "source": "Manchester Evening News via Yahoo Sports, 9-11 September 2026",
+   "id": 131
+  },
+  {
+   "player": "Joe Gomez",
+   "team": "LIV",
+   "signal": "returning",
+   "confidence": "high",
+   "note": "Iraola said in his press conference that Gomez was expected to resume full team training this week after a summer muscle problem.",
+   "source": "Liverpoolfc.com press conference round-up, c. 7 September 2026",
+   "id": 359
+  },
+  {
+   "player": "Bradley Barcola",
+   "team": "LIV",
+   "signal": "expected_to_start",
+   "confidence": "medium",
+   "note": "Iraola said Barcola's issue was \"just cramps\" with no injury and that he should be available if things progressed normally.",
+   "source": "Liverpool FC availability update, 11 September 2026",
+   "id": 627
+  },
+  {
+   "player": "Habib Diarra",
+   "team": "SUN",
+   "signal": "out",
+   "confidence": "medium",
+   "note": "Sunderland reported Diarra unavailable with a thigh problem, alongside Romaine Mundle's knee injury.",
+   "source": "Le Bris pre-match press conference via Arseblog News, c. 10 September 2026",
+   "id": 543
+  }
+ ],
+ "unmatched": []
+}
