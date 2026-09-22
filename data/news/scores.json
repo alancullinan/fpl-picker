@@ -1,0 +1,364 @@
+{
+ "claims": {
+  "n": 27,
+  "claim_right": 21,
+  "model_right": 21,
+  "added": 5,
+  "cost": 5,
+  "net": 0
+ },
+ "pending": 0,
+ "unscored": 1,
+ "groups": {
+  "outlet": {
+   "Manchester Evening News via Yahoo Sports": {
+    "n": 2,
+    "claim_right": 1,
+    "model_right": 1,
+    "added": 0,
+    "cost": 0,
+    "net": 0
+   },
+   "Enzo Maresca pre-Porto press conference": {
+    "n": 1,
+    "claim_right": 1,
+    "model_right": 0,
+    "added": 1,
+    "cost": 0,
+    "net": 1
+   },
+   "Enzo Maresca press conference": {
+    "n": 1,
+    "claim_right": 1,
+    "model_right": 1,
+    "added": 0,
+    "cost": 0,
+    "net": 0
+   },
+   "Sports Mole Arsenal injury round-up": {
+    "n": 1,
+    "claim_right": 1,
+    "model_right": 0,
+    "added": 1,
+    "cost": 0,
+    "net": 1
+   },
+   "Andoni Iraola pre-Atletico press conference": {
+    "n": 1,
+    "claim_right": 1,
+    "model_right": 0,
+    "added": 1,
+    "cost": 0,
+    "net": 1
+   },
+   "Andoni Iraola press conference": {
+    "n": 1,
+    "claim_right": 0,
+    "model_right": 1,
+    "added": 0,
+    "cost": 1,
+    "net": -1
+   },
+   "Spurs Web / football.london": {
+    "n": 1,
+    "claim_right": 1,
+    "model_right": 0,
+    "added": 1,
+    "cost": 0,
+    "net": 1
+   },
+   "football.london": {
+    "n": 1,
+    "claim_right": 1,
+    "model_right": 1,
+    "added": 0,
+    "cost": 0,
+    "net": 0
+   },
+   "Sports Mole Chelsea round-up citing Xabi Alonso": {
+    "n": 1,
+    "claim_right": 1,
+    "model_right": 1,
+    "added": 0,
+    "cost": 0,
+    "net": 0
+   },
+   "Sports Mole Chelsea round-up": {
+    "n": 1,
+    "claim_right": 1,
+    "model_right": 1,
+    "added": 0,
+    "cost": 0,
+    "net": 0
+   },
+   "RotoWire Premier League suspensions tracker": {
+    "n": 1,
+    "claim_right": 1,
+    "model_right": 1,
+    "added": 0,
+    "cost": 0,
+    "net": 0
+   },
+   "Yahoo Sports / Bleacher Report Villa coverage": {
+    "n": 1,
+    "claim_right": 1,
+    "model_right": 1,
+    "added": 0,
+    "cost": 0,
+    "net": 0
+   },
+   "Fabian Hurzeler": {
+    "n": 1,
+    "claim_right": 0,
+    "model_right": 1,
+    "added": 0,
+    "cost": 1,
+    "net": -1
+   },
+   "RotoWire injury tracker": {
+    "n": 1,
+    "claim_right": 1,
+    "model_right": 1,
+    "added": 0,
+    "cost": 0,
+    "net": 0
+   },
+   "RotoWire": {
+    "n": 1,
+    "claim_right": 1,
+    "model_right": 1,
+    "added": 0,
+    "cost": 0,
+    "net": 0
+   },
+   "Michael Carrick": {
+    "n": 1,
+    "claim_right": 0,
+    "model_right": 1,
+    "added": 0,
+    "cost": 1,
+    "net": -1
+   },
+   "Michael Carrick press conference": {
+    "n": 1,
+    "claim_right": 1,
+    "model_right": 0,
+    "added": 1,
+    "cost": 0,
+    "net": 1
+   },
+   "Jordan Cronin": {
+    "n": 1,
+    "claim_right": 0,
+    "model_right": 1,
+    "added": 0,
+    "cost": 1,
+    "net": -1
+   },
+   "Matthias Jaissle press conferences": {
+    "n": 1,
+    "claim_right": 1,
+    "model_right": 1,
+    "added": 0,
+    "cost": 0,
+    "net": 0
+   },
+   "Pierre Sage press conference": {
+    "n": 1,
+    "claim_right": 1,
+    "model_right": 1,
+    "added": 0,
+    "cost": 0,
+    "net": 0
+   },
+   "Arseblog News": {
+    "n": 1,
+    "claim_right": 1,
+    "model_right": 1,
+    "added": 0,
+    "cost": 0,
+    "net": 0
+   },
+   "Villa reporting": {
+    "n": 1,
+    "claim_right": 1,
+    "model_right": 1,
+    "added": 0,
+    "cost": 0,
+    "net": 0
+   },
+   "Express & Star / Birmingham Live": {
+    "n": 1,
+    "claim_right": 1,
+    "model_right": 1,
+    "added": 0,
+    "cost": 0,
+    "net": 0
+   },
+   "Liverpoolfc.com press conference round-up": {
+    "n": 1,
+    "claim_right": 0,
+    "model_right": 1,
+    "added": 0,
+    "cost": 1,
+    "net": -1
+   },
+   "Liverpool FC availability update": {
+    "n": 1,
+    "claim_right": 1,
+    "model_right": 1,
+    "added": 0,
+    "cost": 0,
+    "net": 0
+   },
+   "Le Bris pre-match press conference via Arseblog News": {
+    "n": 1,
+    "claim_right": 1,
+    "model_right": 1,
+    "added": 0,
+    "cost": 0,
+    "net": 0
+   }
+  },
+  "kind": {
+   "unknown": {
+    "n": 27,
+    "claim_right": 21,
+    "model_right": 21,
+    "added": 5,
+    "cost": 5,
+    "net": 0
+   }
+  },
+  "signal": {
+   "returning": {
+    "n": 9,
+    "claim_right": 5,
+    "model_right": 5,
+    "added": 4,
+    "cost": 4,
+    "net": 0
+   },
+   "out": {
+    "n": 9,
+    "claim_right": 9,
+    "model_right": 9,
+    "added": 0,
+    "cost": 0,
+    "net": 0
+   },
+   "expected_to_start": {
+    "n": 4,
+    "claim_right": 4,
+    "model_right": 4,
+    "added": 0,
+    "cost": 0,
+    "net": 0
+   },
+   "doubt": {
+    "n": 3,
+    "claim_right": 3,
+    "model_right": 2,
+    "added": 1,
+    "cost": 0,
+    "net": 1
+   },
+   "rotation_risk": {
+    "n": 2,
+    "claim_right": 0,
+    "model_right": 1,
+    "added": 0,
+    "cost": 1,
+    "net": -1
+   }
+  },
+  "confidence": {
+   "medium": {
+    "n": 18,
+    "claim_right": 17,
+    "model_right": 15,
+    "added": 3,
+    "cost": 1,
+    "net": 2
+   },
+   "high": {
+    "n": 7,
+    "claim_right": 3,
+    "model_right": 4,
+    "added": 2,
+    "cost": 3,
+    "net": -1
+   },
+   "low": {
+    "n": 2,
+    "claim_right": 1,
+    "model_right": 2,
+    "added": 0,
+    "cost": 1,
+    "net": -1
+   }
+  }
+ },
+ "min_sample": 30,
+ "overrides": [
+  {
+   "gw": 2,
+   "chip": null,
+   "xi": -7,
+   "captain": -2,
+   "started": [
+    "Mosquera",
+    "Kinsky",
+    "Tzolis"
+   ],
+   "benched": [
+    "Verbruggen",
+    "van Ewijk",
+    "Tarkowski"
+   ],
+   "cap": [
+    "Jo\u00e3o Pedro",
+    "Mbeumo"
+   ]
+  },
+  {
+   "gw": 3,
+   "chip": "3xc",
+   "xi": 0,
+   "captain": 0,
+   "started": [],
+   "benched": []
+  },
+  {
+   "gw": 4,
+   "chip": "wildcard",
+   "xi": -7,
+   "captain": 0,
+   "started": [
+    "Gomez",
+    "Konsa"
+   ],
+   "benched": [
+    "Calvert-Lewin",
+    "Gu\u00e9hi"
+   ]
+  },
+  {
+   "gw": 5,
+   "chip": null,
+   "xi": -7,
+   "captain": 0,
+   "started": [
+    "Konsa"
+   ],
+   "benched": [
+    "Gomez"
+   ],
+   "cap": [
+    "Palmer",
+    "B.Fernandes"
+   ]
+  }
+ ],
+ "overrides_net": -23
+}
