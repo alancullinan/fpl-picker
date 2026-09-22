@@ -65,6 +65,19 @@ Pages from the `main` branch root.
   `entry_history.points` and the `history` rows are rewritten only when FPL recalculates. Take
   the live pair while the gameweek is in play, or the site reports a total the official app
   passed hours ago and contradicts its own season table.
+- Squad value from FPL is the value at the LAST DEADLINE, not live. `build.py` adjusts it by the
+  price moves since (a fall comes off the selling price in full, a rise is credited at half,
+  rounded down) and keeps the original as `me.value_deadline`. Without this the site offers a
+  budget the game will not honour - it is what left a wildcard 0.2m short at the deadline.
+- Top-10k ownership (`town`, `teo`, `tcap`) is sampled from the LIVE overall standings, so it
+  reports what the CURRENT top 10k owned in a past gameweek. While rank is still mostly recent
+  luck that membership turns over wholesale between gameweeks: the figures swung 58 points for
+  one player with the real market unmoved, which makes the signal a record of what just hauled
+  dressed as elite consensus. `_top_churn` measures the move across each gameweek boundary and
+  the fields are published only below `TOP_CHURN_MAX`; otherwise they are set to None and both
+  the site and the briefing say so. Measured: ~2 within a gameweek (sampling noise at n=300),
+  18.7 then 10.7 then 6.6 across the last three boundaries. It re-enables itself - do not
+  hand-wire a gameweek number. Overall ownership (`sel`) is unaffected and always reliable.
 - A player's history row is evidence only once its own fixture has finished (`_row_played` in
   `build.py`). FPL writes a zero-minute row at the deadline and then counts minutes up live
   during the match, so an unguarded row says a player was dropped before kick-off and says he

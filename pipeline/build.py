@@ -51,6 +51,28 @@ def load_prev(raw):
     return prev
 
 
+def _top_churn(players, prev_bundle, top_gw):
+    """Mean absolute move in top-10k ownership since the sampled gameweek rolled over.
+
+    Measured only across that boundary, where the sample's membership is replaced;
+    within one gameweek the previous reading is carried forward so it survives the
+    many refreshes between deadlines. Returns None until a boundary has been seen.
+    """
+    prev_top = (prev_bundle or {}).get("top") or {}
+    if prev_top.get("gw") is None or prev_top.get("gw") == top_gw:
+        return prev_top.get("churn")
+    prev_town = {pl["id"]: pl["town"] for pl in (prev_bundle or {}).get("players", [])
+                 if pl.get("town") is not None}
+    now_town = {pl["id"]: pl["town"] for pl in players if pl.get("town") is not None}
+    # Only players either sample considers meaningfully owned; the long tail of
+    # near-zeros would swamp the average and make any sample look stable.
+    keys = [i for i, v in now_town.items()
+            if i in prev_town and (v >= 10.0 or prev_town[i] >= 10.0)]
+    if not keys:
+        return prev_top.get("churn")
+    return round(sum(abs(now_town[i] - prev_town[i]) for i in keys) / len(keys), 2)
+
+
 def _row_played(row, finished_fx, finished_gws):
     """Is this history row a completed fixture?
 
@@ -119,6 +141,15 @@ def build(raw, out):
     fixture_hist = load(raw, "element-history.json") or {}
     lineups = load(raw, "lineups.json") or {}
     top = load(raw, "top-picks.json") or {}
+    # The top-10k sample is drawn from the LIVE overall standings, so it measures
+    # what the CURRENT top 10k owned in a past gameweek. Early in a season rank is
+    # mostly recent luck, so that membership churns wholesale between gameweeks and
+    # the figure swings by tens of points while nobody has transferred anything -
+    # it reports what just hauled, dressed as elite consensus. Re-drawing the same
+    # gameweek moves it ~2 points (sampling noise at n=300); crossing a gameweek
+    # moved it 18.7, then 10.7, then 6.6 as the season settled. The signal is
+    # published only once a crossing costs no more than twice the noise floor.
+    TOP_CHURN_MAX = 4.0
     # Team news read by news.py for this gameweek. Carried through and shown,
     # but deliberately not an input to the model: see the FPL skill.
     news, news_by_id = {}, {}
@@ -132,6 +163,7 @@ def build(raw, out):
         except (OSError, ValueError) as e:
             print(f"could not read {news_path}: {e}", file=sys.stderr)
     top_n = top.get("sampled") or 0
+    top_counts_now = top.get("counts") or {}
     top_counts = top.get("counts") or {}
     short_to_id = {t["short_name"]: tid for tid, t in teams.items()}
     # Rotowire shows whatever match is next for each club, which during an
@@ -312,6 +344,17 @@ def build(raw, out):
                 prev_bundle = json.load(f)
         except (OSError, ValueError):
             prev_bundle = None
+    # How far the top-10k sample moved when the gameweek it reports rolled over.
+    # Measured across that boundary only; within one gameweek it is carried
+    # forward, so a reading survives the many refreshes between deadlines.
+    top_churn = _top_churn(players, prev_bundle, top.get("gw")) if top_n else None
+    top_reliable = top_churn is not None and top_churn <= TOP_CHURN_MAX
+    if top_n and not top_reliable:
+        # Publish nothing rather than something that reads as elite consensus and
+        # is really a record of last weekend. Overall ownership (sel) is unaffected.
+        for pl in players:
+            pl["town"] = pl["teo"] = pl["tcap"] = None
+
     season_started = current is not None
     if season_started and history is not None and not history.get("current"):
         pm = (prev_bundle or {}).get("me") or {}
@@ -373,6 +416,23 @@ def build(raw, out):
                 if my["picks_gw"] in finished_gws:
                     my["gw_points"] = eh.get("points")
             my["active_chip"] = picks.get("active_chip")
+        # FPL reports squad value as it stood at the last deadline; prices move
+        # daily after it. A fall comes off the selling price in full, a rise is
+        # credited at half and rounded down, so the live value is the deadline
+        # figure plus that adjustment. Without it the site offers a budget the
+        # game will not honour, which is exactly how a wildcard comes up short.
+        if my.get("picks"):
+            by_id = {pl["id"]: pl for pl in players}
+            adj10 = 0
+            for sel in my["picks"]:
+                pl = by_id.get(sel["id"])
+                if not pl:
+                    continue
+                dp10 = int(round(pl["dprice"] * 10))
+                adj10 += dp10 if dp10 < 0 else dp10 // 2
+            my["value_deadline"] = my["value"]
+            my["value"] = round(my["value"] + adj10 / 10.0, 1)
+
         # Same reasoning for the season table, so the two agree on screen.
         if my.get("picks_gw") not in finished_gws and my.get("gw_points") is not None:
             for row in my.get("history", []):
@@ -395,7 +455,8 @@ def build(raw, out):
         "chips": chips_def,
         "news": {"generated": news.get("generated"), "checked": news.get("checked", []),
                  "count": len(news_by_id)} if news_by_id else None,
-        "top": {"gw": top.get("gw"), "sampled": top_n, "ranks": top.get("ranks")} if top_n else None,
+        "top": {"gw": top.get("gw"), "sampled": top_n, "ranks": top.get("ranks"),
+                "churn": top_churn, "reliable": top_reliable} if top_n else None,
         "lineups": {"source": lineups.get("source"), "fetched": lineups.get("fetched"),
                     "matches": [{"home": m["home"], "away": m["away"], "status": m["status"]}
                                 for m in lineups.get("matches", []) if (m["home"], m["away"]) in next_pairs]} if lineups else None,

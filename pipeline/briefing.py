@@ -172,8 +172,15 @@ def build_context(d):
     for p in others:
         out.append("  " + player_line(p, teams))
 
-    if d.get("top"):
+    if d.get("top") and d["top"].get("reliable"):
         out += ["", f"OWNERSHIP CONTEXT: sampled {d['top']['sampled']} squads from the top {d['top']['ranks'][1]:,} after gameweek {d['top']['gw']}."]
+    elif d.get("top"):
+        out += ["", "OWNERSHIP CONTEXT: top-10k ownership and captaincy are WITHHELD this week and are "
+                    "absent from the player lines above. The sample is drawn from the live standings, so "
+                    "while rank is still mostly recent luck its membership turns over between gameweeks and "
+                    "the figures swing by tens of points with nobody transferring anything. Do NOT reason "
+                    "about what the top 10k own or captain, do not estimate it, and do not treat its absence "
+                    "as low ownership. Overall ownership is reliable and is given."]
     if d.get("lineups"):
         out += [f"PREDICTED LINEUPS: {len(d['lineups']['matches'])} matches from Rotowire, fetched {d['lineups']['fetched']}. A player marked 'NOT in predicted XI' may simply be missing from a match not yet published."]
     return "\n".join(x for x in out if x != "")

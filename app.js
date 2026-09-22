@@ -255,7 +255,14 @@
   // effective ownership, where a captain counts twice. A player you own who is
   // widely owned above you is a smaller risk than his raw ownership suggests.
   function eoText(p) {
-    if (!D.top || p.town == null) return '<span class="muted">no sample</span>';
+    if (!D.top) return '<span class="muted">no sample</span>';
+    if (p.town == null) {
+      // Withheld, not missing: the sample tracks the CURRENT top 10k, whose
+      // membership churns wholesale between gameweeks while rank is still mostly
+      // luck, so the figure reports what just hauled rather than elite judgement.
+      const c = D.top.churn == null ? '' : ` Last gameweek it moved ${num(D.top.churn)} points a player; it is published under 4.`;
+      return `<span class="muted">Top-10k ownership withheld: the sample is not yet stable enough to mean anything.${c}</span>`;
+    }
     const diff = p.town - p.sel;
     const lean = Math.abs(diff) < 4 ? '' : diff > 0
       ? ` <span class="good">+${num(diff)} vs overall</span>`
