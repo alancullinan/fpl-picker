@@ -150,9 +150,20 @@ confirmed squad is current.
 `pipeline/topmanagers.py` samples squads spread through the top 10,000 of the overall league
 and counts ownership and captaincy. The bundle carries `town` (ownership among that sample),
 `tcap` (captaincy) and `teo` (effective ownership, captain counted twice) per player, and
-`top` (sample size, gameweek, rank range) at the top level. Use it for risk, never for xP: a
-highly owned player you also own is a small risk whatever his xP, and a low-owned one is where
-rank is won or lost. Say "X% of the top 10k own him" rather than treating it as a prediction.
+`top` (sample size, gameweek, rank range, churn, reliable) at the top level. Use it for risk,
+never for xP: a highly owned player you also own is a small risk whatever his xP, and a
+low-owned one is where rank is won or lost. Say "X% of the top 10k own him" rather than
+treating it as a prediction.
+
+**The three fields are often withheld, and that is not the same as low ownership.** The sample
+is drawn from the LIVE standings, so it reports what the CURRENT top 10k owned in a past
+gameweek. While rank is still mostly recent luck that membership turns over wholesale between
+gameweeks - Bruno Fernandes read 97.0% owned / 92.0% captained one day and 39.3% / 1.0% the
+next, with overall ownership unmoved. Nobody transferred; the population changed, and the
+metric is then a record of what just hauled wearing the clothes of elite consensus. `build.py`
+measures the move across each gameweek boundary (`top.churn`) and sets the fields to None
+above `TOP_CHURN_MAX`. When `top.reliable` is false, do not reason about, estimate, or infer
+top-10k ownership at all. Overall ownership (`sel`) is always reliable.
 
 ## The transfer solver
 
@@ -163,6 +174,26 @@ carry forward. It obeys budget, three per club, squad shape and free-transfer ac
 reports the plan against doing nothing. It is a heuristic, not a proof of optimality, it
 assumes selling at current price, and it does not plan chips. When recommending from it, quote
 the projected gain over holding and say it ignores chips.
+
+## Tested and not shipped: club concentration
+
+Stacking one club is genuinely correlated, and the effect replicates: a teammate's points,
+measured as deviation from that player's own season mean, correlates at r = +0.123, +0.123 and
++0.112 across 2023-24, 2024-25 and 2025-26. Two players from different clubs correlate at
+about zero (-0.001, -0.009, -0.004). So the mechanism is real, unlike most things tested here.
+
+It was still not shipped, because the size does not justify it. Correlation moves variance
+only - expected points are untouched - and at r = 0.12 the variance is barely moved. An XI
+carrying a trio and two pairs (the GW5 squad: 3 Arsenal, 2 United, 2 Chelsea) has a standard
+deviation 5.3% higher than the same eleven spread across eleven clubs. One trio alone is
++3.2%, one pair +1.1%. Against a typical XI standard deviation of roughly nine points that is
+half a point, so concentration cannot explain a bad week and a penalty would buy almost no
+stability while costing expected points, which are the thing that is actually scarce.
+
+Note also the direction. A penalty REDUCES variance, and a manager chasing rank from far back
+needs variance, not less of it. Do not add a concentration penalty to the solver on the basis
+that a stacked club blanked; that is the tail behaving as a tail. Re-test only if a season
+shows r materially above 0.2.
 
 ## Weekly workflow
 
