@@ -159,7 +159,11 @@ def build(raw, out):
             with open(news_path, encoding="utf-8") as f:
                 news = json.load(f)
             for sig in news.get("signals", []):
-                news_by_id[sig["id"]] = {k: sig[k] for k in ("signal", "confidence", "note", "source")}
+                # Several outlets may speak about one player; show the most confident.
+                rank = {"high": 3, "medium": 2, "low": 1}
+                cur = news_by_id.get(sig["id"])
+                if cur is None or rank.get(sig.get("confidence"), 0) > rank.get(cur.get("confidence"), 0):
+                    news_by_id[sig["id"]] = {k: sig.get(k) for k in ("signal", "confidence", "note", "source", "outlet")}
         except (OSError, ValueError) as e:
             print(f"could not read {news_path}: {e}", file=sys.stderr)
     top_n = top.get("sampled") or 0
@@ -467,7 +471,14 @@ def build(raw, out):
     os.makedirs(os.path.dirname(out) or ".", exist_ok=True)
     with open(out, "w", encoding="utf-8") as f:
         json.dump(bundle, f, separators=(",", ":"))
-    snapshot(bundle, os.path.join(os.path.dirname(out) or ".", "history"))
+    hist_dir = os.path.join(os.path.dirname(out) or ".", "history")
+    snapshot(bundle, hist_dir)
+    picks_by_gw = {}
+    for gw, pk in (load(raw, "entry-picks-past.json") or {}).items():
+        picks_by_gw[int(gw)] = pk
+    if picks and picks.get("_event"):
+        picks_by_gw[int(picks["_event"])] = picks
+    record_outcomes(hist_dir, fixture_hist, finished_gws, picks_by_gw)
     print(f"wrote {out} ({os.path.getsize(out)//1024} KB): {len(players)} players, next GW {next_id}, "
           f"team {'ok' if my and my['picks'] else 'absent'}")
 
@@ -485,11 +496,61 @@ def snapshot(bundle, hist_dir):
     path = os.path.join(hist_dir, f"gw{gw:02d}.json")
     data = {
         "gw": gw, "generated": bundle["generated"],
-        "players": {str(p["id"]): [p["xp1"], p["p_play"], p["ep_next"]] for p in bundle["players"]},
+        # [xp1, p_play, ep_next, p_60]; files written before p_60 was added are 3 wide.
+        "players": {str(p["id"]): [p["xp1"], p["p_play"], p["ep_next"], p["p_60"]] for p in bundle["players"]},
     }
     with open(path, "w", encoding="utf-8") as f:
         json.dump(data, f, separators=(",", ":"))
     print(f"wrote {path}")
+
+
+def record_outcomes(hist_dir, fixture_hist, finished_gws, picks_by_gw):
+    """Write what happened next to what was predicted, so both can be scored.
+
+    Each gwNN.json holds the last prediction made before that deadline. Once the
+    gameweek is finished this adds "actual" - {id: [minutes, starts, points]},
+    summed over a double - and, whenever known, "picks": the squad you fielded.
+    The predictions themselves are never touched, and a file is only rewritten
+    when something new is added.
+    """
+    if not os.path.isdir(hist_dir):
+        return
+    for name in sorted(os.listdir(hist_dir)):
+        if not (name.startswith("gw") and name.endswith(".json")):
+            continue
+        path = os.path.join(hist_dir, name)
+        try:
+            gw = int(name[2:4])
+            with open(path, encoding="utf-8") as f:
+                snap = json.load(f)
+        except (ValueError, OSError):
+            continue
+        changed = False
+        if gw in finished_gws and "actual" not in snap and fixture_hist:
+            actual = {}
+            for pid, rows in fixture_hist.items():
+                for r in rows:
+                    if r[0] != gw:
+                        continue
+                    a = actual.setdefault(pid, [0, 0, 0])
+                    a[0] += r[1] or 0
+                    a[1] += r[2] or 0
+                    a[2] += (r[4] if len(r) > 4 and r[4] is not None else 0)
+            # Only complete once points are present; older raw rows carry none.
+            if actual and any(len(r) > 4 for rows in fixture_hist.values() for r in rows[:1]):
+                snap["actual"] = actual
+                changed = True
+        pk = picks_by_gw.get(gw)
+        if pk and "picks" not in snap and gw in finished_gws:
+            snap["picks"] = [{"id": x["element"], "slot": x["position"], "mult": x["multiplier"],
+                              "c": bool(x.get("is_captain")), "vc": bool(x.get("is_vice_captain"))}
+                             for x in pk.get("picks", [])]
+            snap["chip"] = pk.get("active_chip")
+            changed = True
+        if changed:
+            with open(path, "w", encoding="utf-8") as f:
+                json.dump(snap, f, separators=(",", ":"))
+            print(f"recorded outcomes in {path}")
 
 
 def free_transfers(history):

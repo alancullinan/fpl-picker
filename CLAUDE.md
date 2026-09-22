@@ -32,7 +32,15 @@ Pages from the `main` branch root.
 - `pipeline/news.py`: reads team news with Claude + web search into structured per-player
   signals, archived per gameweek in `data/news/`. Runs between the two `build.py` calls in the
   workflow, because it needs the bundle and the bundle needs its output. Never an xP input
-  until scored - see the skill.
+  until scored - see the skill. It reads managers and FPL analysts for what they OBSERVE
+  (who starts, who is on penalties, role changes) and never for what they recommend; every
+  claim names its `outlet` so each source can be scored over the season.
+- `pipeline/score_news.py`: free, runs on every refresh, writes `data/news/scores.json`.
+  Scores each claim against the model's own prediction for the same player - only the cases
+  where they disagree count - by outlet, source kind, signal and confidence; and scores your
+  overrides (XI and captain against the model's best XI from the same fifteen). Reads the
+  `actual` and `picks` that `build.py` `record_outcomes` writes into `data/history/gwNN.json`
+  once a gameweek finishes. Predictions in those files are never rewritten.
 - `pipeline/briefing.py`: asks Claude for the week's advice from the built bundle plus the FPL
   skill, and writes `data/briefing.json`. Advice only - nothing it produces feeds expected
   points. `--dry-run` prints the prompt without calling the API. Needs the ANTHROPIC_API_KEY

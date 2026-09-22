@@ -137,6 +137,29 @@ role changed over the summer; check `--last 8` for early-season behaviour as wel
 season). Points-per-game form scores 0.38 and 40.8. Expert or crowd signals
 go through the same gate before they touch xP.
 
+### Scoring experts, news and your own overrides
+
+The headroom is minutes (about six points a gameweek of best XI with perfect minutes), and
+that is what good FPL analysts are actually good at: they watch the matches and read every
+press conference. They rarely have inside information. Their PICKS are another matter - picks
+repeat what the model already weighs and are what moves the whole transfer market, so
+following them buys the template, not rank. So `news.py` records observations only (start,
+benched, out, doubt, rotation risk, returning, role, penalties, set pieces), each naming its
+outlet, and `score_news.py` keeps the record.
+
+A claim only earns anything where it DISAGREES with the model: agreeing and being right adds
+nothing. The figure that matters is the net of disagreements - claim right and model wrong,
+minus the reverse - per outlet. A source earns a place in the minutes model only when, over
+at least 30 disagreements across several gameweeks, its net is clearly positive; it then goes
+through `backtest.py`-style checking on the season so far before any weight is set. Role
+claims (penalties, set pieces, role changes) are recorded but not yet checkable from what the
+repo stores. Until then everything from news is shown as context and nothing more.
+
+Your own overrides are scored the same way - the points your XI and captain changes won or
+lost against the model's best XI from the same fifteen. Treat that as evidence about where
+your eye beats the numbers (so far: minutes and role - Konsa, twice) rather than as a
+running score.
+
 ## What the API can and cannot show
 
 Picks and transfers for a gameweek appear in the public API only after that gameweek's

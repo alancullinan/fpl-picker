@@ -100,6 +100,12 @@ jobs:
           fi
           pip install --quiet anthropic || { echo "could not install the SDK; skipping"; exit 0; }
           python pipeline/briefing.py --force || echo "briefing step failed; keeping the previous one"
+      - name: Score team news and overrides
+        # Free - no API calls. Once a gameweek's results are in, records how each
+        # news source's claims fared against the model, and how your own XI and
+        # captaincy changes did. Decides whether news may ever feed xP; never feeds it.
+        if: steps.gate.outputs.run == 'yes'
+        run: python pipeline/score_news.py --json data/news/scores.json || echo "scoring failed; carrying on"
       - name: Commit if changed
         if: steps.gate.outputs.run == 'yes'
         run: |

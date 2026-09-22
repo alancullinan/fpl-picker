@@ -95,7 +95,10 @@ def fetch_element_history(bootstrap, out, workers=8):
         # The fixture id rides along so the build can tell a finished match from
         # one being played right now: minutes tick up live, and a player on the
         # pitch at half time reads as a 40-minute outing until the whistle.
-        return pid, [[h.get("round"), h.get("minutes", 0), 1 if h.get("starts") else 0, h.get("fixture")] for h in rows]
+        # Points ride along too, so a gameweek's outcome can be recorded next to
+        # what was predicted for it and the predictions scored afterwards.
+        return pid, [[h.get("round"), h.get("minutes", 0), 1 if h.get("starts") else 0, h.get("fixture"),
+                      h.get("total_points")] for h in rows]
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as ex:
         for pid, rows in ex.map(one, wanted):
@@ -164,6 +167,29 @@ def main():
         if picks:
             picks["_event"] = current
             save(args.out, "entry-picks.json", picks)
+
+    # Earlier gameweeks' picks, for scoring your overrides against the model.
+    # Only those not yet recorded in data/history are fetched, so after the
+    # first run this costs nothing: build.py writes them into the committed
+    # prediction files, which is where the next run looks.
+    hist_dir = os.path.join(os.path.dirname(os.path.abspath(args.out)), "history")
+    past = {}
+    if current is not None and os.path.isdir(hist_dir):
+        for name in sorted(os.listdir(hist_dir)):
+            if not (name.startswith("gw") and name.endswith(".json")):
+                continue
+            try:
+                gw = int(name[2:4])
+                with open(os.path.join(hist_dir, name), encoding="utf-8") as f:
+                    recorded = "picks" in json.load(f)
+            except (ValueError, OSError):
+                continue
+            if gw < current and not recorded:
+                pk = get(f"entry/{args.entry}/event/{gw}/picks")
+                if pk:
+                    past[str(gw)] = {"picks": pk.get("picks", []), "active_chip": pk.get("active_chip")}
+    if past:
+        save(args.out, "entry-picks-past.json", past)
 
 
 if __name__ == "__main__":

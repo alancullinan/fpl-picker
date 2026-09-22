@@ -29,7 +29,12 @@ MODEL = "claude-opus-5"
 MAX_TOKENS = 32000
 MAX_SEARCHES = 18
 
-SIGNALS = ["expected_to_start", "rotation_risk", "doubt", "out", "returning", "role_change"]
+# Claims about minutes are scored against what happened (score_news.py); role
+# claims (penalties, set pieces, role_change) are recorded for later but cannot
+# yet be checked from the data this repo keeps.
+SIGNALS = ["expected_to_start", "benched", "rotation_risk", "doubt", "out", "returning",
+           "role_change", "penalties", "set_pieces"]
+KINDS = ["manager_quote", "club", "reporter", "fpl_expert", "aggregator"]
 
 SCHEMA = {
     "type": "object",
@@ -47,8 +52,10 @@ SCHEMA = {
                     "confidence": {"type": "string", "enum": ["high", "medium", "low"]},
                     "note": {"type": "string", "description": "One short sentence of what was actually said or reported."},
                     "source": {"type": "string", "description": "Publication or outlet, and the date if known."},
+                    "outlet": {"type": "string", "description": "Just the outlet or writer, spelled the same way every time (e.g. 'Fantasy Football Scout', 'BBC Sport', 'The Athletic', 'Ben Dinnery'). Used to score each source over the season."},
+                    "kind": {"type": "string", "enum": KINDS, "description": "manager_quote: the manager said it on the record. club: official club channel. reporter: a journalist's reporting. fpl_expert: an FPL analyst's read or predicted lineup. aggregator: a roundup repeating someone else."},
                 },
-                "required": ["player", "team", "signal", "confidence", "note", "source"],
+                "required": ["player", "team", "signal", "confidence", "note", "source", "outlet", "kind"],
                 "additionalProperties": False,
             },
         },
@@ -65,10 +72,17 @@ The model already knows every player's minutes history, injury flag as published
 - a European or cup tie close to this fixture that implies rotation
 - a player returning to training or to the squad after injury, and when he is expected back
 - a change of role or position that changes what he will score (a midfielder pushed forward, a full-back moved inside)
+- who is taking penalties or set pieces, where that has changed or is not obvious
 - a suspension, a new signing expected to go straight in, a manager change
 
+Where to look. Managers' press conferences first. Then experienced FPL analysts - predicted lineups, press-conference roundups, injury specialists, set-piece trackers - because they watch the matches and read every briefing, and they often see a role or a rotation pattern before any number does. Roundup pages that cover every club in one place are the efficient way to spend searches.
+
+Use experts for what they observe, never for what they recommend. Record "X is expected to start" or "Y has taken the last three corners"; do NOT record "buy X" or "captain Y" - picks are not signals, they just repeat what the model already knows and what everyone else is reading.
+
 Rules:
-- One signal per player, for the player most affected. Do not list a whole squad.
+- One signal per player from one outlet. If two outlets say DIFFERENT things about the same player, report both, each with its own outlet - disagreement is information. If they agree, report the one closest to the source (a manager quote over a roundup repeating it).
+- Name the outlet consistently: the same writer or site spelled the same way every week, so each can be scored over the season.
+- Do not list a whole squad.
 - Only report what a named source actually said or reported. If you cannot find real news for a club, leave it out of "checked" rather than guessing.
 - "expected_to_start" is for a player whose start is newly confirmed or newly in question and now resolved - not for every obvious regular.
 - Prefer the most recent reporting. Football news goes stale in days.
