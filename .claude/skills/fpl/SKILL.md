@@ -156,9 +156,12 @@ claims (penalties, set pieces, role changes) are recorded but not yet checkable 
 repo stores. Until then everything from news is shown as context and nothing more.
 
 Your own overrides are scored the same way - the points your XI and captain changes won or
-lost against the model's best XI from the same fifteen. Treat that as evidence about where
-your eye beats the numbers (so far: minutes and role - Konsa, twice) rather than as a
-running score.
+lost against the model's best XI from the same fifteen, using the last prediction before the
+deadline. Quote that figure rather than recalling individual calls: judged against whichever
+alternative happened to be discussed at the time, a pick can look vindicated while the fair
+benchmark says it cost points. That happened here - Konsa was described as right twice, and
+against the deadline XI the two weeks cost 14 points. Treat the record as evidence about
+where your eye beats the numbers, not as a running score, and not before 10+ gameweeks.
 
 ## What the API can and cannot show
 
