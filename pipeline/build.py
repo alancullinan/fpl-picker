@@ -61,8 +61,13 @@ def _top_churn(players, prev_bundle, top_gw):
     prev_top = (prev_bundle or {}).get("top") or {}
     if prev_top.get("gw") is None or prev_top.get("gw") == top_gw:
         return prev_top.get("churn")
-    prev_town = {pl["id"]: pl["town"] for pl in (prev_bundle or {}).get("players", [])
-                 if pl.get("town") is not None}
+    # The previous sample comes from top.sample, kept whether or not it was
+    # published: the player fields are blanked while withheld, and reading only
+    # those left the gate unable to measure again - once off, off for good.
+    prev_town = {int(i): v for i, v in (prev_top.get("sample") or {}).items()}
+    if not prev_town:
+        prev_town = {pl["id"]: pl["town"] for pl in (prev_bundle or {}).get("players", [])
+                     if pl.get("town") is not None}
     now_town = {pl["id"]: pl["town"] for pl in players if pl.get("town") is not None}
     # Only players either sample considers meaningfully owned; the long tail of
     # near-zeros would swamp the average and make any sample look stable.
@@ -352,6 +357,9 @@ def build(raw, out):
     # Measured across that boundary only; within one gameweek it is carried
     # forward, so a reading survives the many refreshes between deadlines.
     top_churn = _top_churn(players, prev_bundle, top.get("gw")) if top_n else None
+    # Kept unpublished for the next boundary's comparison; only meaningful owners.
+    top_sample = {str(pl["id"]): pl["town"] for pl in players
+                  if pl.get("town") is not None and pl["town"] >= 5.0} if top_n else {}
     top_reliable = top_churn is not None and top_churn <= TOP_CHURN_MAX
     if top_n and not top_reliable:
         # Publish nothing rather than something that reads as elite consensus and
@@ -460,7 +468,7 @@ def build(raw, out):
         "news": {"generated": news.get("generated"), "checked": news.get("checked", []),
                  "count": len(news_by_id)} if news_by_id else None,
         "top": {"gw": top.get("gw"), "sampled": top_n, "ranks": top.get("ranks"),
-                "churn": top_churn, "reliable": top_reliable} if top_n else None,
+                "churn": top_churn, "reliable": top_reliable, "sample": top_sample} if top_n else None,
         "lineups": {"source": lineups.get("source"), "fetched": lineups.get("fetched"),
                     "matches": [{"home": m["home"], "away": m["away"], "status": m["status"]}
                                 for m in lineups.get("matches", []) if (m["home"], m["away"]) in next_pairs]} if lineups else None,
