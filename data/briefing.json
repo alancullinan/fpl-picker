@@ -1,80 +1,80 @@
 {
- "gw": 6,
- "deadline": "2026-10-10T10:00:00Z",
- "generated": "2026-10-09T13:08:07Z",
- "data_generated": "2026-10-09T13:05:57Z",
+ "gw": 7,
+ "deadline": "2026-10-17T10:00:00Z",
+ "generated": "2026-10-16T11:39:20Z",
+ "data_generated": "2026-10-16T11:37:25Z",
  "model": "claude-opus-5",
  "usage": {
-  "input": 15997,
-  "output": 9676,
-  "cost_usd": 0.3219
+  "input": 16039,
+  "output": 7878,
+  "cost_usd": 0.2771
  },
  "briefing": {
-  "headline": "Three free transfers and three broken assets: move Konsa out, and the Palmer-to-Saka swap is the one that actually buys points \u2014 then captain Fernandes, not your injured captain.",
+  "headline": "You are one of the few without Haaland (75.6% owned, 7.22 xP this week, 32.6 over five - the highest in the game), you have four free transfers, and this is the week to fix it even though it takes three moves to fund.",
   "do": [
    {
-    "action": "Sell Konsa (\u00a34.6m) for N.Williams (NFO, \u00a35.0m)",
-    "why": "Konsa is in your starting XI projecting 0.98 points: 39% chance of playing, 20 minutes in his last outing, an unspecified injury at 75%, and absent from Rotowire's predicted Arsenal XI. N.Williams has played 90/90 at 100% likelihood and projects 19.9 over five against Konsa's 10.8 \u2014 a 9.1-point gain for one free transfer, and it drops you to two Arsenal players, which is what makes the Saka move legal.",
-    "confidence": "high"
-   },
-   {
-    "action": "Sell Palmer (\u00a39.7m) for Saka (\u00a39.6m)",
-    "why": "A near-exact price swap that gains 2.0 this week (6.01 v 4.00) and 9.5 over five (28.3 v 18.8), and removes a muscular injury rated 75%. Both are first on penalties, so the model's missing penalty-taker bonus doesn't favour either. Palmer is 24.4% owned and Saka 15.3%, so you are taking on a little price risk for a clear projection gain, not giving anything up in template terms.",
+    "action": "Sell Jo\u00e3o Pedro, Bruno Fernandes and Gu\u00e9hi; buy Haaland, E.Le F\u00e9e and Van Hecke (three of your four FTs, no hit).",
+    "why": "Out: 19.6 + 28.2 + 22.7 = 70.5 xP over five. In: 32.6 + 22.3 + 21.9 = 76.8. That is +6.3 over five gameweeks for free, and +1.2 this week (15.43 to 16.62). The money is exact: 7.8 + 11.9 + 6.0 + \u00a30.5m bank = \u00a326.2m against \u00a326.2m for Haaland, Le F\u00e9e and Van Hecke. Jo\u00e3o Pedro is the right funder - 19.6 over five is the weakest attacker you own, below Thiago's 23.7 - and Fernandes at \u00a311.9m is the only way to reach a \u00a315.6m striker in one window.",
     "confidence": "medium"
    },
    {
-    "action": "Change the captain off Palmer to B.Fernandes, and make Mbeumo vice",
-    "why": "Palmer projects 4.00 with a 75% fitness flag; Fernandes projects 7.17 at home to Tottenham (FDR 2) with 90/90 minutes, 100% play and penalties. Mbeumo (6.57) is the backup in the same fixture, which is fine \u2014 if Fernandes is a late withdrawal Mbeumo still kicks off.",
+    "action": "Check the exact sale prices in the app before confirming, and keep Konsa \u2192 Thomas (COV, \u00a34.0m) as the fallback fourth transfer.",
+    "why": "The model assumes selling at current price. If any of Fernandes, Gu\u00e9hi or Jo\u00e3o Pedro were bought below today's price you are short by \u00a30.1-0.3m and the whole plan fails at the last click. Konsa (\u00a34.6m, 17.5 over five, fourth on your bench) to Thomas (\u00a34.0m, 18.2 over five) frees \u00a30.6m, uses your last FT and loses nothing on paper - though Thomas has only 527 minutes behind his numbers, so he is a bench body, not a starter.",
     "confidence": "high"
    },
    {
-    "action": "Start De Cuyper and Gomez; bench Konsa (or his replacement) and Jo\u00e3o Pedro",
-    "why": "Your bench currently holds De Cuyper (4.10) and Gomez (4.17) while Konsa (0.98) starts. Even before transfers that is roughly three points thrown away for free. Post-transfers the best XI is Raya; Calafiori 4.66, Thiaw 4.10, De Cuyper 4.10; Fernandes 7.17, Mbeumo 6.57, Saka 6.01, Tavernier 4.45, Gomez 4.17; Thiago 4.80, Barry 4.61 \u2014 with Gu\u00e9hi (3.38, away at Liverpool, FDR 4) and Calvert-Lewin (3.68, away at Arsenal, FDR 5) the unlucky ones on the bench.",
-    "confidence": "medium"
+    "action": "Start Haaland, Mbeumo, Tavernier, Palmer, Gomez, Le F\u00e9e, Thiago, De Cuyper, Van Hecke, Calafiori, Raya; bench Calvert-Lewin, Thiaw, Konsa behind Kelleher.",
+    "why": "That is the highest-xP legal XI from the new fifteen (3-5-2): Haaland 7.22, Mbeumo 5.4, De Cuyper 5.47, Van Hecke 4.97, Tavernier 4.97, Palmer 4.85, Gomez 4.85, Thiago 4.46, Le F\u00e9e 4.43, Calafiori 4.41, Raya 3.65. Thiaw's 3.81 and Calvert-Lewin's 4.27 against MUN (H, FDR 4) are the ones to drop.",
+    "confidence": "high"
    }
   ],
   "consider": [
    {
-    "action": "Use the third free transfer on Jo\u00e3o Pedro (\u00a37.7m) \u2192 Barry (EVE, \u00a35.7m)",
-    "why": "For: Jo\u00e3o Pedro projects 0.99 this week and 10.1 over five \u2014 28% chance of playing, 15 minutes last time out, a knee injury at 75% and no place in the predicted Chelsea XI. Barry plays (97%, 86/90), is on Everton's penalties, projects 20.1 over five, and the swap banks \u00a32.0m. Against: 63.6% of all managers own Jo\u00e3o Pedro, a 75% flag is a doubt rather than an absence, and the minutes model is known to drag an injured player's five-week number down by projecting his recent absence forward \u2014 if he starts at home to Bournemouth that 10.1 is simply wrong. The deciding point is that waiting costs nothing: using two transfers leaves you two next week, so you can watch the team news and still act in GW7.",
+    "action": "Doing nothing at all and banking to five FTs.",
+    "why": "For: you keep Fernandes (28.2 over five, penalties, your current captain) and Gu\u00e9hi (22.7) and avoid rebuilding around a \u00a315.6m striker at a point when your squad has no injuries and nothing below 93% to play. Against: banking is capped at five, so a fourth and fifth FT are worth little, and the gap you are carrying is not a transfer gap, it is Haaland - 32.6 over five against the 19.6 you have in that slot. At rank 4.1m you are not protecting anything.",
     "confidence": "medium"
    },
    {
-    "action": "Starting Gu\u00e9hi ahead of De Cuyper",
-    "why": "For: Gu\u00e9hi is your \u00a36.0m defender with 21.0 over five and only drops out this week because City travel to Liverpool (FDR 4) \u2014 benching him on a 0.72 projected difference is noise-level churn. Against: the 0.72 is free and De Cuyper has the softer draw. Either is defensible; don't agonise.",
+    "action": "Keeping Gu\u00e9hi and funding the last \u00a31.1m by downgrading Calafiori (\u00a35.9m, 22.0) to Van Hecke instead.",
+    "why": "For: Gu\u00e9hi has started 90/90 and scores 22.7 over five against Van Hecke's 21.9, and Arsenal's run (LIV away, NEW away) is the lumpier one. Against: it leaves you \u00a30.1m short of Haaland on the model's prices, so it only works if your Calafiori sale price is at or above \u00a35.9m. Check it; if it is, this version is marginally better.",
     "confidence": "low"
+   },
+   {
+    "action": "Bench Boost timing.",
+    "why": "Your bench is unusually strong - Kelleher 3.37, Calvert-Lewin 4.27, Gomez 4.85, Konsa 3.48, about 16 points of bench xP in a normal week. That is a real chip in your hand, and set one expires at the GW19 deadline. Not this week with no double on, but if no double gameweek has appeared by GW17-18, play it on the best fixture week rather than letting it lapse.",
+    "confidence": "medium"
    }
   ],
   "ignore": [
    {
-    "action": "Chasing Haaland",
-    "why": "He is 74.0% owned overall and the biggest single rank risk you carry, but at \u00a315.6m with \u00a30.5m in the bank he cannot be funded. The only route is selling Fernandes, and Haaland's 32.6 over five against Fernandes's 31.0 is 1.6 points, which would be wiped out several times over by the \u00a34.5m midfielder you'd be forced to buy and by losing your captaincy option. Note it as the risk you're carrying, don't act on it this week."
+    "action": "The cheap high-xP names near the top of the list - Vuskovic (4.59 this week), Silva (4.30), S\u00e1vio (4.54), Gonzalo (4.52).",
+    "why": "Every one carries a thin-evidence flag: 527, 540, 330 and 511 minutes respectively. Those are extrapolations from a third of a season, and none of them is worth spending a free transfer on when the squad has no hole to fill."
    },
    {
-    "action": "The cheap high-value defenders \u2014 Thomas (COV, \u00a34.0m, 17.4 over five) and Davis (IPS, \u00a34.0m, 17.3)",
-    "why": "Both are flagged thin evidence: 437 and 450 minutes respectively, all of it this season. Those projections are an extrapolation from five matches, and you don't need the \u00a31.0m they'd release."
+    "action": "Using the fourth free transfer just because it is there.",
+    "why": "After three moves your next-week FT count is 2. A fourth transfer only pays if it is the Konsa funding swap or your sale prices force it; a marginal one-for-one worth a few tenths over five weeks is not a reason to spend it."
    },
    {
-    "action": "Playing a chip",
-    "why": "No blank or double in GW6 and your bench after transfers reads Kelleher 3.52, N.Williams 3.93, Gu\u00e9hi 3.38 and Calvert-Lewin 3.68 \u2014 a Bench Boost there is worth roughly a normal bench, not a chip."
+    "action": "Swapping Thiago (23.7 over five) out to fund Haaland.",
+    "why": "He is your second-best attacking asset over the horizon, takes Brentford's penalties, and has played 90/90. Jo\u00e3o Pedro's 19.6 is the slot that should go."
    },
    {
-    "action": "Panicking at the overall rank of 4,924,791",
-    "why": "Your wildcard from the first set is already gone, so there is no reset available. Over-trading now, with three live doubts in the squad, is how you end up taking hits in GW7 and GW8. Make the clear moves and keep a transfer in hand."
+    "action": "Any reasoning about what the top 10k own or captain.",
+    "why": "Those fields are withheld this week because the sample churned. Overall ownership is all that is usable: Haaland 75.6%, Fernandes 33.4%, Jo\u00e3o Pedro 70.6%."
    }
   ],
   "captain": {
-   "pick": "B.Fernandes",
-   "alternative": "Mbeumo",
-   "why": "Fernandes projects 7.17 at home to Tottenham (FDR 2), highest in your squad, with penalties and 90/90 minutes; Mbeumo is 6.57 in the same match and takes the armband if Fernandes drops out. The ownership reality: Haaland is 74.0% owned overall and is the field's default captain, and you don't have him \u2014 so you are already captaining differently to most of the game whatever you do. That is a rank bet you cannot avoid this week, which is a reason to take the highest-projecting option you own rather than hedging. Top-10k ownership and captaincy are withheld this week, so there is nothing reliable to say about elite consensus."
+   "pick": "Haaland (if the transfer goes through)",
+   "alternative": "Mbeumo, or Bruno Fernandes if you hold",
+   "why": "7.22 xP against Ipswich at home, FDR 2, and first on penalties - the clear top score in the dataset, with Mbeumo next at 5.4 and Fernandes at 5.79. He is owned by 75.6% of the game overall, so captaining him is siding with the field, not beating it. That is the right call from 4.1m: you close ground by owning the best player and the best captain, not by dodging them. If the money does not work and you keep Fernandes, captain him at Leeds away (5.79) with Mbeumo as vice."
   },
-  "chips": "No chip this week. Free Hit and Bench Boost both remain from the first set, and both expire at the GW19 deadline (2 January 2027) \u2014 that is thirteen gameweeks away, which is comfortable but not infinite. Hold them for a blank or double; a Bench Boost on this bench would score about what a bench scores.",
+  "chips": "No chip this week. Free Hit and Bench Boost are both intact from set one, which must be used by the GW19 deadline (2 January) or it is lost - there is no blank or double in GW7 to justify either. Bench Boost is the likelier of the two given your bench already projects around 16 points; diarise GW17-18 as the backstop if no double appears.",
   "risks": [
-   "The Rotowire set covers all 10 matches, so Konsa and Jo\u00e3o Pedro being absent from their predicted XIs is meaningful \u2014 but it is still a prediction, and the model pulls a player left out 70% of the way towards not starting. If either is named, their one-point projections are badly understated.",
-   "Palmer passing his fitness test and hauling at home to Bournemouth is the obvious way the Saka move looks bad in a week. He is first on penalties and the model has no penalty-taker bonus, so his ceiling is above his 4.00.",
-   "Selling prices are assumed to be current prices. Your wildcard was only in GW4 so purchase prices are recent and any shortfall should be small, but check in the app before confirming three moves against a \u00a30.5m bank.",
-   "Saka's 82/90 minutes and 98% play assume no European rotation; the bundle carries no midweek schedule, so that is unmodelled.",
-   "If Jo\u00e3o Pedro returns to the Chelsea XI and you have sold him, you are short of a widely owned forward (63.6%) with no wildcard left to correct course cheaply."
+   "Sale prices: the model assumes you sell at today's price. If Fernandes, Gu\u00e9hi or Jo\u00e3o Pedro were bought cheaper, the three-move plan is short by up to \u00a30.3m and collapses - verify in the app before confirming anything.",
+   "Haaland against Ipswich at home is exactly the fixture City rotate in; a 60-minute cameo with the game won would undercut both the transfer and the captaincy.",
+   "Fernandes is on penalties, 33.4% owned and has played 90/90 - selling him the week he hauls at Leeds is the obvious way this looks wrong.",
+   "Le F\u00e9e (3.1% owned) and Van Hecke (6.4%) are pure model picks with no crowd behind them; if either loses his place the plan's +6.3 evaporates and you have downgraded two starters for nothing.",
+   "Predicted lineups cover 10 matches and were fetched on 16 October; a late press conference can move any of these start probabilities, Van Hecke and De Cuyper especially."
   ]
  }
 }
