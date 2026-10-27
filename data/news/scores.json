@@ -1,31 +1,31 @@
 {
  "claims": {
-  "n": 103,
-  "claim_right": 78,
-  "model_right": 77,
-  "added": 18,
-  "cost": 17,
-  "net": 1
+  "n": 134,
+  "claim_right": 101,
+  "model_right": 105,
+  "added": 21,
+  "cost": 25,
+  "net": -4
  },
- "pending": 31,
+ "pending": 0,
  "unscored": 8,
  "groups": {
   "outlet": {
    "Fantasy Football Scout": {
-    "n": 31,
-    "claim_right": 22,
-    "model_right": 24,
-    "added": 5,
-    "cost": 7,
+    "n": 38,
+    "claim_right": 28,
+    "model_right": 30,
+    "added": 6,
+    "cost": 8,
     "net": -2
    },
    "Evening Standard": {
-    "n": 10,
-    "claim_right": 8,
-    "model_right": 8,
-    "added": 1,
-    "cost": 1,
-    "net": 0
+    "n": 21,
+    "claim_right": 17,
+    "model_right": 18,
+    "added": 2,
+    "cost": 3,
+    "net": -1
    },
    "the False 9": {
     "n": 9,
@@ -42,6 +42,14 @@
     "added": 1,
     "cost": 1,
     "net": 0
+   },
+   "Sports Mole": {
+    "n": 4,
+    "claim_right": 2,
+    "model_right": 3,
+    "added": 1,
+    "cost": 2,
+    "net": -1
    },
    "football.london": {
     "n": 3,
@@ -87,6 +95,30 @@
     "n": 2,
     "claim_right": 1,
     "model_right": 1,
+    "added": 0,
+    "cost": 0,
+    "net": 0
+   },
+   "Suffolk News": {
+    "n": 2,
+    "claim_right": 2,
+    "model_right": 2,
+    "added": 0,
+    "cost": 0,
+    "net": 0
+   },
+   "Sky Sports": {
+    "n": 2,
+    "claim_right": 0,
+    "model_right": 2,
+    "added": 0,
+    "cost": 2,
+    "net": -2
+   },
+   "CityXtra": {
+    "n": 2,
+    "claim_right": 2,
+    "model_right": 2,
     "added": 0,
     "cost": 0,
     "net": 0
@@ -363,7 +395,31 @@
     "cost": 0,
     "net": 0
    },
-   "Sports Mole": {
+   "Spurs Web": {
+    "n": 1,
+    "claim_right": 0,
+    "model_right": 1,
+    "added": 0,
+    "cost": 1,
+    "net": -1
+   },
+   "Roundtable Sports": {
+    "n": 1,
+    "claim_right": 1,
+    "model_right": 1,
+    "added": 0,
+    "cost": 0,
+    "net": 0
+   },
+   "Premier League": {
+    "n": 1,
+    "claim_right": 1,
+    "model_right": 1,
+    "added": 0,
+    "cost": 0,
+    "net": 0
+   },
+   "Newcastle United": {
     "n": 1,
     "claim_right": 1,
     "model_right": 1,
@@ -373,6 +429,22 @@
    }
   },
   "kind": {
+   "reporter": {
+    "n": 43,
+    "claim_right": 29,
+    "model_right": 34,
+    "added": 5,
+    "cost": 10,
+    "net": -5
+   },
+   "manager_quote": {
+    "n": 30,
+    "claim_right": 25,
+    "model_right": 27,
+    "added": 2,
+    "cost": 4,
+    "net": -2
+   },
    "unknown": {
     "n": 27,
     "claim_right": 21,
@@ -381,42 +453,26 @@
     "cost": 5,
     "net": 0
    },
-   "reporter": {
-    "n": 25,
-    "claim_right": 18,
-    "model_right": 17,
-    "added": 4,
-    "cost": 3,
-    "net": 1
-   },
-   "manager_quote": {
-    "n": 21,
-    "claim_right": 16,
-    "model_right": 20,
-    "added": 0,
-    "cost": 4,
-    "net": -4
-   },
    "fpl_expert": {
-    "n": 20,
+    "n": 21,
     "claim_right": 15,
-    "model_right": 12,
+    "model_right": 13,
     "added": 6,
-    "cost": 3,
-    "net": 3
+    "cost": 4,
+    "net": 2
    },
    "aggregator": {
-    "n": 9,
-    "claim_right": 8,
-    "model_right": 6,
+    "n": 11,
+    "claim_right": 10,
+    "model_right": 8,
     "added": 3,
     "cost": 1,
     "net": 2
    },
    "club": {
-    "n": 1,
-    "claim_right": 0,
-    "model_right": 1,
+    "n": 2,
+    "claim_right": 1,
+    "model_right": 2,
     "added": 0,
     "cost": 1,
     "net": -1
@@ -424,70 +480,70 @@
   },
   "signal": {
    "returning": {
-    "n": 33,
-    "claim_right": 20,
-    "model_right": 21,
-    "added": 11,
-    "cost": 12,
-    "net": -1
+    "n": 42,
+    "claim_right": 25,
+    "model_right": 28,
+    "added": 13,
+    "cost": 16,
+    "net": -3
    },
    "out": {
-    "n": 28,
-    "claim_right": 26,
-    "model_right": 25,
+    "n": 34,
+    "claim_right": 32,
+    "model_right": 31,
     "added": 1,
     "cost": 0,
     "net": 1
    },
    "doubt": {
-    "n": 19,
-    "claim_right": 14,
-    "model_right": 12,
-    "added": 3,
-    "cost": 1,
-    "net": 2
+    "n": 27,
+    "claim_right": 20,
+    "model_right": 19,
+    "added": 4,
+    "cost": 3,
+    "net": 1
    },
    "expected_to_start": {
-    "n": 17,
-    "claim_right": 14,
-    "model_right": 15,
+    "n": 23,
+    "claim_right": 20,
+    "model_right": 21,
     "added": 2,
     "cost": 3,
     "net": -1
    },
    "rotation_risk": {
-    "n": 6,
+    "n": 8,
     "claim_right": 4,
-    "model_right": 4,
+    "model_right": 6,
     "added": 1,
-    "cost": 1,
-    "net": 0
+    "cost": 3,
+    "net": -2
    }
   },
   "confidence": {
    "medium": {
-    "n": 63,
-    "claim_right": 52,
-    "model_right": 43,
+    "n": 77,
+    "claim_right": 61,
+    "model_right": 57,
     "added": 15,
-    "cost": 6,
-    "net": 9
+    "cost": 11,
+    "net": 4
    },
    "high": {
-    "n": 24,
-    "claim_right": 16,
-    "model_right": 20,
-    "added": 2,
+    "n": 34,
+    "claim_right": 26,
+    "model_right": 28,
+    "added": 4,
     "cost": 6,
-    "net": -4
+    "net": -2
    },
    "low": {
-    "n": 16,
-    "claim_right": 10,
-    "model_right": 14,
-    "added": 1,
-    "cost": 5,
-    "net": -4
+    "n": 23,
+    "claim_right": 14,
+    "model_right": 20,
+    "added": 2,
+    "cost": 8,
+    "net": -6
    }
   }
  },
@@ -584,7 +640,25 @@
     "Jo\u00e3o Pedro",
     "B.Fernandes"
    ]
+  },
+  {
+   "gw": 8,
+   "chip": null,
+   "xi": 3,
+   "captain": -2,
+   "started": [
+    "De Cuyper",
+    "Calvert-Lewin"
+   ],
+   "benched": [
+    "Jo\u00e3o Pedro",
+    "Gu\u00e9hi"
+   ],
+   "cap": [
+    "Jo\u00e3o Pedro",
+    "Mbeumo"
+   ]
   }
  ],
- "overrides_net": -11
+ "overrides_net": -10
 }
