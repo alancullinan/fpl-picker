@@ -658,6 +658,14 @@
     "Jo\u00e3o Pedro",
     "Mbeumo"
    ]
+  },
+  {
+   "gw": 9,
+   "chip": null,
+   "xi": 0,
+   "captain": 0,
+   "started": [],
+   "benched": []
   }
  ],
  "overrides_net": -10
