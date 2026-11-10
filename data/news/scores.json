@@ -666,7 +666,19 @@
    "captain": 0,
    "started": [],
    "benched": []
+  },
+  {
+   "gw": 10,
+   "chip": null,
+   "xi": 4,
+   "captain": 0,
+   "started": [
+    "Calvert-Lewin"
+   ],
+   "benched": [
+    "Thiago"
+   ]
   }
  ],
- "overrides_net": -10
+ "overrides_net": -6
 }
