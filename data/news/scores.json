@@ -678,6 +678,14 @@
    "benched": [
     "Thiago"
    ]
+  },
+  {
+   "gw": 11,
+   "chip": null,
+   "xi": 0,
+   "captain": 0,
+   "started": [],
+   "benched": []
   }
  ],
  "overrides_net": -6
